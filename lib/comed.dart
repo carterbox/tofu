@@ -1,3 +1,5 @@
+/// Fetch electricity rate data from ComEd REST API.
+
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -32,6 +34,7 @@ List<double> getAverageRates(EnergyRates energyRates, int minutesPerBin) {
   return averageRates;
 }
 
+/// Returns the 5-minute rates from the past 24 Hours.
 Future<EnergyRates> fetchRatesLast24Hours() async {
   final response = await http.get(Uri.parse(
       'https://hourlypricing.comed.com/api?type=5minutefeed&format=json'));
@@ -42,12 +45,37 @@ Future<EnergyRates> fetchRatesLast24Hours() async {
   }
 }
 
+/// Returns the real hourly rates from the past 24 Hours.
+Future<EnergyRates> fetchRatesLastDay() async {
+  final response = await http.get(
+      Uri.parse('https://hourlypricing.comed.com/api?type=day&date=20221016'));
+  if (response.statusCode == 200) {
+    return EnergyRates.fromText(response.body, '\u00A2');
+  } else {
+    throw Exception('Failed to load rates from last 24 hours.');
+  }
+}
+
+/// Returns the predicted hourly rates for the next day.
+Future<EnergyRates> fetchRatesNextDay() async {
+  final response = await http.get(Uri.parse(
+      'https://hourlypricing.comed.com/api?type=daynexttoday&date=20221016'));
+  if (response.statusCode == 200) {
+    return EnergyRates.fromText(response.body, '\u00A2');
+  } else {
+    throw Exception('Failed to load rates from last 24 hours.');
+  }
+}
+
+/// A collection of energy rates over time.
 class EnergyRates {
-  // The time corresponding to each rate
+  /// Times corresponding the end of period for each of the [rates].
   final List<DateTime> dates;
-  // The unit of measure
+
+  /// The unit of measure for the [rates].
   final String units;
-  // The number of units per kwh
+
+  /// The number of [units] per kwh
   final List<double> rates;
 
   const EnergyRates({
@@ -56,6 +84,7 @@ class EnergyRates {
     required this.rates,
   });
 
+  /// Construct from json like this: [{"millisUTC":"1665944400000","price":"3.0"}, ...]
   factory EnergyRates.fromJson(List<dynamic> json, String units) {
     return EnergyRates(
       dates: json
@@ -66,6 +95,32 @@ class EnergyRates {
           .toList(),
       units: units,
       rates: json.map((x) => double.parse(x['price'])).toList(),
+    );
+  }
+
+  /// Construct from a string like this: [ [Date.UTC(2022,9,16,23,0,0), 4.3], ...]
+  factory EnergyRates.fromText(String text, String units) {
+    // Replace the constructor in the string
+    final regex = RegExp(r'[0-9]+\.?[0-9]*');
+    final numbers =
+        regex.allMatches(text).map((x) => x[0]!).toList(growable: false);
+    var dates = List<DateTime>.empty(growable: true);
+    var rates = List<double>.empty(growable: true);
+    for (var i = 0; i < numbers.length; i += 7) {
+      dates.add(DateTime(
+        int.parse(numbers[i]),
+        int.parse(numbers[i + 1]),
+        int.parse(numbers[i + 2]),
+        int.parse(numbers[i + 3]),
+        int.parse(numbers[i + 4]),
+        int.parse(numbers[i + 5]),
+      ));
+      rates.add(double.parse(numbers[i + 6]));
+    }
+    return EnergyRates(
+      dates: dates,
+      units: units,
+      rates: rates,
     );
   }
 }
