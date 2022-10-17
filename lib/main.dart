@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
 import 'comed.dart';
@@ -33,18 +34,24 @@ class MyHomePage extends StatefulWidget {
 }
 
 /// Return the pie char sections for the time of use
-List<chart.PieChartSectionData> timeOfUse(EnergyRates rates, int resample) {
+List<chart.PieChartSectionData> timeOfUse(
+  EnergyRates rates,
+  int resample,
+  double width,
+) {
   List<double> smoothedRates = getAverageRates(rates, resample);
-  return smoothedRates
-      .map(
-        (x) => chart.PieChartSectionData(
-          value: 1,
-          showTitle: true,
-          title: x.toStringAsFixed(1),
-          radius: x * 10,
-        ),
-      )
-      .toList();
+  return smoothedRates.map(
+    (x) {
+      final r = x * width / 14.0;
+      return chart.PieChartSectionData(
+        value: 1,
+        showTitle: true,
+        title: x.toStringAsFixed(1),
+        radius: r,
+        titlePositionPercentageOffset: 0.5 / r * width,
+      );
+    },
+  ).toList();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -64,18 +71,29 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(0.0),
           child: FutureBuilder<EnergyRates>(
             future: futureRates,
             builder: (context, snapshot) {
               if (snapshot.hasData) {
-                return chart.PieChart(
-                  chart.PieChartData(
-                    sections: timeOfUse(snapshot.data!, 5),
-                    centerSpaceRadius: double.infinity,
-                    startDegreeOffset: -90,
-                  ),
-                );
+                return LayoutBuilder(builder: (context, constraints) {
+                  final radius = 0.5 *
+                      min(
+                        constraints.maxHeight,
+                        constraints.maxWidth,
+                      );
+                  return chart.PieChart(
+                    chart.PieChartData(
+                      sections: timeOfUse(
+                        snapshot.data!,
+                        60,
+                        radius * 4 / 5,
+                      ),
+                      centerSpaceRadius: radius / 5,
+                      startDegreeOffset: -90,
+                    ),
+                  );
+                });
               } else if (snapshot.hasError) {
                 // TODO: Display a connection error message
               }
