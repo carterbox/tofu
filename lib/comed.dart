@@ -54,11 +54,14 @@ Future<EnergyRates> fetchRatesLast24Hours() async {
 
 /// Returns the real hourly rates from the past 24 Hours.
 Future<EnergyRates> fetchRatesLastDay() async {
-  final now = DateTime.now();
-  final response = await http.get(Uri.parse(
-      'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(now)}'));
-  if (response.statusCode == 200) {
-    return EnergyRates.fromText(response.body, '\u00A2');
+  final today = DateTime.now();
+  final response1 = await http.get(Uri.parse(
+      'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(today)}'));
+  final yesterday = today.subtract(const Duration(days: 1));
+  final response0 = await http.get(Uri.parse(
+      'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(yesterday)}'));
+  if (response0.statusCode == 200 && response1.statusCode == 200) {
+    return EnergyRates.fromText(response0.body + response1.body, '\u00A2');
   } else {
     throw Exception('Failed to load rates from last 24 hours.');
   }
@@ -66,11 +69,14 @@ Future<EnergyRates> fetchRatesLastDay() async {
 
 /// Returns the predicted hourly rates for the next day.
 Future<EnergyRates> fetchRatesNextDay() async {
-  final now = DateTime.now();
-  final response = await http.get(Uri.parse(
-      'https://hourlypricing.comed.com/api?type=daynexttoday&date=${_dateWithZeros(now)}'));
-  if (response.statusCode == 200) {
-    return EnergyRates.fromText(response.body, '\u00A2');
+  final today = DateTime.now();
+  final response0 = await http.get(Uri.parse(
+      'https://hourlypricing.comed.com/api?type=daynexttoday&date=${_dateWithZeros(today)}'));
+  final tomorrow = today.add(const Duration(days: 1));
+  final response1 = await http.get(Uri.parse(
+      'https://hourlypricing.comed.com/api?type=daynexttoday&date=${_dateWithZeros(tomorrow)}'));
+  if (response0.statusCode == 200 && response1.statusCode == 200) {
+    return EnergyRates.fromText(response0.body + response1.body, '\u00A2');
   } else {
     throw Exception('Failed to load rates from last 24 hours.');
   }

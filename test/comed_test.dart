@@ -22,6 +22,6 @@ void main() {
     print((await fetchRatesNextDay()).rates);
   });
   test('Check fetchRatesLastDay', () async {
-    print((await fetchRatesNextDay()).rates);
+    print((await fetchRatesLastDay()).rates);
   });
 }
