@@ -70,36 +70,33 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(0.0),
-          child: FutureBuilder<EnergyRates>(
-            future: futureRates,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                return LayoutBuilder(builder: (context, constraints) {
-                  final radius = 0.5 *
-                      min(
-                        constraints.maxHeight,
-                        constraints.maxWidth,
-                      );
-                  return chart.PieChart(
-                    chart.PieChartData(
-                      sections: timeOfUse(
-                        snapshot.data!,
-                        60,
-                        radius * 4 / 5,
-                      ),
-                      centerSpaceRadius: radius / 5,
-                      startDegreeOffset: -90,
+        child: FutureBuilder<EnergyRates>(
+          future: futureRates,
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              return LayoutBuilder(builder: (context, constraints) {
+                final radius = 0.5 *
+                    min(
+                      constraints.maxHeight,
+                      constraints.maxWidth,
+                    );
+                return chart.PieChart(
+                  chart.PieChartData(
+                    sections: timeOfUse(
+                      snapshot.data!,
+                      60,
+                      radius * 4 / 5,
                     ),
-                  );
-                });
-              } else if (snapshot.hasError) {
-                // TODO: Display a connection error message
-              }
-              return const CircularProgressIndicator();
-            },
-          ),
+                    centerSpaceRadius: radius / 5,
+                    startDegreeOffset: -90,
+                  ),
+                );
+              });
+            } else if (snapshot.hasError) {
+              // TODO: Display a connection error message
+            }
+            return const CircularProgressIndicator();
+          },
         ),
       ),
     );
