@@ -3,6 +3,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart' as intl;
+
+final _datefmt = intl.NumberFormat('##00', 'en_US');
+
+String _dateWithZeros(DateTime date) {
+  return '${_datefmt.format(date.year)}${_datefmt.format(date.month)}${_datefmt.format(date.day)}';
+}
 
 /// Reduce and EnergyRate into bins of the requested size
 List<double> getAverageRates(EnergyRates energyRates, int minutesPerBin) {
@@ -47,8 +54,9 @@ Future<EnergyRates> fetchRatesLast24Hours() async {
 
 /// Returns the real hourly rates from the past 24 Hours.
 Future<EnergyRates> fetchRatesLastDay() async {
-  final response = await http.get(
-      Uri.parse('https://hourlypricing.comed.com/api?type=day&date=20221016'));
+  final now = DateTime.now();
+  final response = await http.get(Uri.parse(
+      'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(now)}'));
   if (response.statusCode == 200) {
     return EnergyRates.fromText(response.body, '\u00A2');
   } else {
@@ -58,8 +66,9 @@ Future<EnergyRates> fetchRatesLastDay() async {
 
 /// Returns the predicted hourly rates for the next day.
 Future<EnergyRates> fetchRatesNextDay() async {
+  final now = DateTime.now();
   final response = await http.get(Uri.parse(
-      'https://hourlypricing.comed.com/api?type=daynexttoday&date=20221016'));
+      'https://hourlypricing.comed.com/api?type=daynexttoday&date=${_dateWithZeros(now)}'));
   if (response.statusCode == 200) {
     return EnergyRates.fromText(response.body, '\u00A2');
   } else {
