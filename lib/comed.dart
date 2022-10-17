@@ -22,8 +22,7 @@ List<double> getAverageRates(EnergyRates energyRates, int minutesPerBin) {
   }
   final int numBins = minutesPerDay ~/ minutesPerBin;
 
-  // FIXME: PieChartSectionData cannot render zero rate, so add a tiny offset
-  List<double> averageRates = List<double>.filled(numBins, 0.001);
+  List<double> averageRates = List<double>.filled(numBins, 0);
   List<int> counts = List<int>.filled(numBins, 0);
 
   for (int i = 0; i < energyRates.rates.length; i++) {

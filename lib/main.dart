@@ -42,7 +42,14 @@ List<chart.PieChartSectionData> timeOfUse(
   List<double> smoothedRates = getAverageRates(rates, resample);
   return smoothedRates.map(
     (x) {
-      final r = x * width / 14.0;
+      double r = x * width / 14.0;
+      if (x == 0.0) {
+        // Chart cannot render a zero height bar.
+        r = 0.001;
+      } else if (x < 0.0) {
+        // Large negative bars look really bad.
+        r = -1.0;
+      }
       return chart.PieChartSectionData(
         value: 1,
         showTitle: true,
@@ -80,11 +87,12 @@ class _MyHomePageState extends State<MyHomePage> {
                       constraints.maxHeight,
                       constraints.maxWidth,
                     );
+                const bin_width = 60;
                 return chart.PieChart(
                   chart.PieChartData(
                     sections: timeOfUse(
                       snapshot.data!,
-                      60,
+                      bin_width,
                       radius * 4 / 5,
                     ),
                     centerSpaceRadius: radius / 5,
