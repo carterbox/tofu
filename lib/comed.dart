@@ -57,18 +57,18 @@ List<double> getAverageRates(EnergyRates energyRates, int minutesPerBin) {
 }
 
 /// Returns the 5-minute rates from the past 24 Hours.
-Future<EnergyRates> fetchRatesLast24Hours() async {
+Future<CentPerEnergyRates> fetchRatesLast24Hours() async {
   final response = await http.get(Uri.parse(
       'https://hourlypricing.comed.com/api?type=5minutefeed&format=json'));
   if (response.statusCode == 200) {
-    return EnergyRates.fromJson(jsonDecode(response.body), '\u00A2');
+    return CentPerEnergyRates.fromJson(jsonDecode(response.body));
   } else {
     throw Exception('Failed to load rates from last 24 hours.');
   }
 }
 
 /// Returns the real hourly rates from the past 24 Hours.
-Future<EnergyRates> fetchRatesLastDay() async {
+Future<CentPerEnergyRates> fetchRatesLastDay() async {
   final today = DateTime.now();
   final response1 = await http.get(Uri.parse(
       'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(today)}'));
@@ -76,14 +76,14 @@ Future<EnergyRates> fetchRatesLastDay() async {
   final response0 = await http.get(Uri.parse(
       'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(yesterday)}'));
   if (response0.statusCode == 200 && response1.statusCode == 200) {
-    return EnergyRates.fromText(response0.body + response1.body, '\u00A2');
+    return CentPerEnergyRates.fromText(response0.body + response1.body);
   } else {
     throw Exception('Failed to load rates from last 24 hours.');
   }
 }
 
 /// Returns the predicted hourly rates for the next day.
-Future<EnergyRates> fetchRatesNextDay() async {
+Future<CentPerEnergyRates> fetchRatesNextDay() async {
   final today = DateTime.now();
   final response0 = await http.get(Uri.parse(
       'https://hourlypricing.comed.com/api?type=daynexttoday&date=${_dateWithZeros(today)}'));
@@ -91,45 +91,51 @@ Future<EnergyRates> fetchRatesNextDay() async {
   final response1 = await http.get(Uri.parse(
       'https://hourlypricing.comed.com/api?type=daynexttoday&date=${_dateWithZeros(tomorrow)}'));
   if (response0.statusCode == 200 && response1.statusCode == 200) {
-    return EnergyRates.fromText(response0.body + response1.body, '\u00A2');
+    return CentPerEnergyRates.fromText(response0.body + response1.body);
   } else {
     throw Exception('Failed to load rates from last 24 hours.');
   }
 }
 
 /// A collection of energy rates over time.
-class EnergyRates {
+abstract class EnergyRates {
   /// Times corresponding the end of period for each of the [rates].
   final List<DateTime> dates;
-
-  /// The unit of measure for the [rates].
-  final String units;
 
   /// The number of [units] per kwh
   final List<double> rates;
 
   const EnergyRates({
     required this.dates,
-    required this.units,
     required this.rates,
+  });
+}
+
+/// A collection of US dollar cents per kWh across multiple periods.
+class CentPerEnergyRates extends EnergyRates {
+  /// The unit of measure for the [rates].
+  static const String units = '\u00A2';
+
+  const CentPerEnergyRates({
+    required super.dates,
+    required super.rates,
   });
 
   /// Construct from json like this: [{"millisUTC":"1665944400000","price":"3.0"}, ...]
-  factory EnergyRates.fromJson(List<dynamic> json, String units) {
-    return EnergyRates(
+  factory CentPerEnergyRates.fromJson(List<dynamic> json) {
+    return CentPerEnergyRates(
       dates: json
           .map((x) => DateTime.fromMillisecondsSinceEpoch(
                 int.parse(x['millisUTC']),
                 isUtc: true,
               ).toLocal())
           .toList(),
-      units: units,
       rates: json.map((x) => double.parse(x['price'])).toList(),
     );
   }
 
   /// Construct from a string like this: [ [Date.UTC(2022,9,16,23,0,0), 4.3], ...]
-  factory EnergyRates.fromText(String text, String units) {
+  factory CentPerEnergyRates.fromText(String text) {
     // Replace the constructor in the string
     final regex = RegExp(r'[0-9]+\.?[0-9]*');
     final numbers =
@@ -147,10 +153,17 @@ class EnergyRates {
       ));
       rates.add(double.parse(numbers[i + 6]));
     }
-    return EnergyRates(
+    return CentPerEnergyRates(
       dates: dates,
-      units: units,
       rates: rates,
+    );
+  }
+
+  /// Concatenate another [CentPerEnergyRates] to this one.
+  CentPerEnergyRates operator +(CentPerEnergyRates other) {
+    return CentPerEnergyRates(
+      dates: dates + other.dates,
+      rates: rates + other.rates,
     );
   }
 }
