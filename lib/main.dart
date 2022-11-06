@@ -55,7 +55,7 @@ List<chart.PieChartSectionData> timeOfUse(
   int resample,
   double width,
 ) {
-  List<double> smoothedRates = getAverageRates(rates, resample);
+  List<double> smoothedRates = getStrictHourRates(rates);
   return smoothedRates.map(
     (x) {
       double r = x * width / 14.0;
@@ -79,13 +79,11 @@ List<chart.PieChartSectionData> timeOfUse(
 
 class _MyHomePageState extends State<MyHomePage> {
   late Future<EnergyRates> futureRates;
-  late Future<EnergyRates> pastRates;
 
   @override
   void initState() {
     super.initState();
     futureRates = fetchRatesNextDay();
-    pastRates = fetchRatesLastDay();
   }
 
   @override
@@ -114,7 +112,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       radius * 4 / 5,
                     ),
                     centerSpaceRadius: radius / 5,
-                    startDegreeOffset: -90,
+                    startDegreeOffset: -360 * (7 / 24),
                   ),
                 );
               });
