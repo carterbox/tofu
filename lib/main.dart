@@ -66,30 +66,37 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: FutureBuilder<EnergyRates>(
-          future: futureRates,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return LayoutBuilder(builder: (context, constraints) {
-                final radius = 0.7 *
-                    min(
-                      constraints.maxHeight,
-                      constraints.maxWidth,
-                    );
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    getSolarCircle(radius * 1 / 5),
-                    getPriceClock(snapshot.data!, radius * 4 / 5),
-                  ],
-                );
-              });
-            } else if (snapshot.hasError) {
-              // TODO: Display a connection error message
-            }
-            return const CircularProgressIndicator();
-          },
-        ),
+        child: LayoutBuilder(builder: (context, constraints) {
+          final radius = 0.7 *
+              min(
+                constraints.maxHeight,
+                constraints.maxWidth,
+              );
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              getSolarCircle(radius * 1 / 5),
+              FutureBuilder<EnergyRates>(
+                future: futureRates,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return getPriceClock(snapshot.data!, radius * 4 / 5);
+                  }
+                  if (snapshot.hasError) {
+                    // TODO: Display a connection error message
+                  }
+                  return SizedBox(
+                    width: radius / 10,
+                    height: radius / 10,
+                    child: CircularProgressIndicator(
+                      strokeWidth: radius / 50,
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
