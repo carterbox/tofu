@@ -58,14 +58,16 @@ List<chart.PieChartSectionData> timeOfUse(
   List<double> smoothedRates = getStrictHourRates(rates);
   return smoothedRates.map(
     (x) {
-      double r = x * width / 14.0;
       if (x == 0.0) {
-        // Chart cannot render a zero height bar.
-        r = 0.001;
-      } else if (x < 0.0) {
-        // Large negative bars look really bad.
-        r = -1.0;
+        return chart.PieChartSectionData(
+          value: 1,
+          showTitle: false,
+          // Chart cannot render a zero height bar.
+          radius: 0.001,
+        );
       }
+      // Large negative bars look really bad.
+      double r = x < 0.0 ? -1.0 : x * width / 14.0;
       return chart.PieChartSectionData(
         value: 1,
         showTitle: true,
