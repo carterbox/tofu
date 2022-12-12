@@ -50,36 +50,6 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-/// Return the pie char sections for the time of use
-List<chart.PieChartSectionData> timeOfUse(
-  EnergyRates rates,
-  int resample,
-  double width,
-) {
-  List<double> smoothedRates = getStrictHourRates(rates);
-  return smoothedRates.map(
-    (x) {
-      if (x == 0.0) {
-        return chart.PieChartSectionData(
-          value: 1,
-          showTitle: false,
-          // Chart cannot render a zero height bar.
-          radius: 0.001,
-        );
-      }
-      // Large negative bars look really bad.
-      double r = x < 0.0 ? -1.0 : x * width / 14.0;
-      return chart.PieChartSectionData(
-        value: 1,
-        showTitle: true,
-        title: '${x.toStringAsFixed(1)}\u00A2',
-        radius: r,
-        titlePositionPercentageOffset: 0.5 / r * width,
-      );
-    },
-  ).toList();
-}
-
 class _MyHomePageState extends State<MyHomePage> {
   late Future<EnergyRates> futureRates;
 
@@ -106,22 +76,11 @@ class _MyHomePageState extends State<MyHomePage> {
                       constraints.maxHeight,
                       constraints.maxWidth,
                     );
-                const bin_width = 60;
                 return Stack(
                   alignment: Alignment.center,
                   children: [
                     getSolarCircle(radius * 1 / 5),
-                    chart.PieChart(
-                      chart.PieChartData(
-                        sections: timeOfUse(
-                          snapshot.data!,
-                          bin_width,
-                          radius * 4 / 5,
-                        ),
-                        centerSpaceRadius: radius / 5,
-                        startDegreeOffset: -360 * (7 / 24),
-                      ),
-                    ),
+                    getPriceClock(snapshot.data!, radius * 4 / 5),
                   ],
                 );
               });

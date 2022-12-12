@@ -20,6 +20,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart' as intl;
+import 'package:fl_chart/fl_chart.dart' as chart;
 
 final _datefmt = intl.NumberFormat('##00', 'en_US');
 
@@ -129,6 +130,13 @@ Future<CentPerEnergyRates> fetchRatesNextDay() async {
   }
 }
 
+Stream<CentPerEnergyRates> streamRatesNextDay() async* {
+  while (true) {
+    yield await fetchRatesNextDay();
+    await Future.delayed(const Duration(minutes: 5));
+  }
+}
+
 /// A collection of energy rates over time.
 abstract class EnergyRates {
   /// Times corresponding the end of period for each of the [rates].
@@ -136,6 +144,9 @@ abstract class EnergyRates {
 
   /// The number of [units] per kwh
   final List<double> rates;
+
+  /// The unit of measure for the [rates].
+  String get units;
 
   const EnergyRates({
     required this.dates,
@@ -145,8 +156,8 @@ abstract class EnergyRates {
 
 /// A collection of US dollar cents per kWh across multiple periods.
 class CentPerEnergyRates extends EnergyRates {
-  /// The unit of measure for the [rates].
-  static const String units = '\u00A2';
+  @override
+  final String units = '\u00A2';
 
   const CentPerEnergyRates({
     required super.dates,
@@ -201,4 +212,46 @@ class CentPerEnergyRates extends EnergyRates {
       rates: rates + other.rates,
     );
   }
+}
+
+/// Return the pie char sections for the time of use
+List<chart.PieChartSectionData> timeOfUse(
+  EnergyRates rates,
+  double width,
+) {
+  List<double> smoothedRates = getStrictHourRates(rates);
+  return smoothedRates.map(
+    (x) {
+      if (x == 0.0) {
+        return chart.PieChartSectionData(
+          value: 1,
+          showTitle: false,
+          // Chart cannot render a zero height bar.
+          radius: 0.001,
+        );
+      }
+      // Large negative bars look really bad.
+      double r = x < 0.0 ? -1.0 : x * width / 14.0;
+      return chart.PieChartSectionData(
+        value: 1,
+        showTitle: true,
+        title: '${x.toStringAsFixed(1)}${rates.units}',
+        radius: r,
+        titlePositionPercentageOffset: 0.5 / r * width,
+      );
+    },
+  ).toList();
+}
+
+chart.PieChart getPriceClock(EnergyRates data, double radius) {
+  return chart.PieChart(
+    chart.PieChartData(
+      sections: timeOfUse(
+        data,
+        radius,
+      ),
+      centerSpaceRadius: radius / 4,
+      startDegreeOffset: -360 * (7 / 24),
+    ),
+  );
 }
