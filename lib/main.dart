@@ -69,7 +69,7 @@ List<chart.PieChartSectionData> timeOfUse(
       return chart.PieChartSectionData(
         value: 1,
         showTitle: true,
-        title: x.toStringAsFixed(1),
+        title: '${x.toStringAsFixed(1)}\u00A2',
         radius: r,
         titlePositionPercentageOffset: 0.5 / r * width,
       );
