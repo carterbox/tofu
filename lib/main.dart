@@ -18,7 +18,8 @@ import 'dart:async';
 import 'dart:math';
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
-import 'comed.dart';
+import 'package:tofu/solar.dart';
+import 'package:tofu/comed.dart';
 
 void main() {
   runApp(const MyApp());
@@ -100,22 +101,28 @@ class _MyHomePageState extends State<MyHomePage> {
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               return LayoutBuilder(builder: (context, constraints) {
-                final radius = 0.5 *
+                final radius = 0.7 *
                     min(
                       constraints.maxHeight,
                       constraints.maxWidth,
                     );
                 const bin_width = 60;
-                return chart.PieChart(
-                  chart.PieChartData(
-                    sections: timeOfUse(
-                      snapshot.data!,
-                      bin_width,
-                      radius * 4 / 5,
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    getSolarCircle(radius * 1 / 5),
+                    chart.PieChart(
+                      chart.PieChartData(
+                        sections: timeOfUse(
+                          snapshot.data!,
+                          bin_width,
+                          radius * 4 / 5,
+                        ),
+                        centerSpaceRadius: radius / 5,
+                        startDegreeOffset: -360 * (7 / 24),
+                      ),
                     ),
-                    centerSpaceRadius: radius / 5,
-                    startDegreeOffset: -360 * (7 / 24),
-                  ),
+                  ],
                 );
               });
             } else if (snapshot.hasError) {
