@@ -18,9 +18,10 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
+import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart' as intl;
-import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:logging/logging.dart' as logging;
 
 final _datefmt = intl.NumberFormat('##00', 'en_US');
@@ -136,6 +137,7 @@ Future<CentPerEnergyRates> fetchRatesNextDay() async {
 }
 
 Stream<CentPerEnergyRates> streamRatesNextDay() async* {
+  final randomInt = Random();
   while (true) {
     try {
       yield await fetchRatesNextDay();
@@ -144,7 +146,8 @@ Stream<CentPerEnergyRates> streamRatesNextDay() async* {
       // Ignore errors and just wait another 5 minutes to try again
       _logger.warning(error);
     }
-    await Future.delayed(const Duration(minutes: 5));
+    await Future.delayed(
+        Duration(minutes: 5, seconds: randomInt.nextInt(30) - 15));
   }
 }
 
