@@ -56,6 +56,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late Stream<EnergyRates> streamOfEnergyRates;
+  int _selectedDestination = 0;
 
   @override
   void initState() {
@@ -68,6 +69,42 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          // Important: Remove any padding from the ListView.
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'Navigation Menu',
+              ),
+            ),
+            const Divider(
+              height: 1,
+              thickness: 1,
+            ),
+            ListTile(
+              leading: const Icon(Icons.price_change),
+              title: const Text('Hourly Energy Rates'),
+              selected: _selectedDestination == 0,
+              onTap: () {
+                selectDestination(0);
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.copyright),
+              title: const Text('Open Source Licenses'),
+              selected: _selectedDestination == 1,
+              onTap: () {
+                Navigator.of(context).pop();
+                showLicensePage(context: context);
+              },
+            ),
+          ],
+        ),
       ),
       body: Center(
         child: LayoutBuilder(builder: (_, constraints) {
@@ -100,5 +137,11 @@ class _MyHomePageState extends State<MyHomePage> {
         }),
       ),
     );
+  }
+
+  void selectDestination(int index) {
+    setState(() {
+      _selectedDestination = index;
+    });
   }
 }
