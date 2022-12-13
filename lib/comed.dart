@@ -21,8 +21,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart' as intl;
 import 'package:fl_chart/fl_chart.dart' as chart;
+import 'package:logging/logging.dart' as logging;
 
 final _datefmt = intl.NumberFormat('##00', 'en_US');
+final _logger = logging.Logger('tofu.comed');
 
 String _dateWithZeros(DateTime date) {
   final str =
@@ -119,20 +121,29 @@ Future<CentPerEnergyRates> fetchRatesNextDay() async {
   final today = DateTime.now();
   final response0 = await http.get(Uri.parse(
       'https://hourlypricing.comed.com/api?type=daynexttoday&date=${_dateWithZeros(today)}'));
+  if (response0.statusCode != 200) {
+    throw http.ClientException(
+        'Server responded with status: ${response0.statusCode}');
+  }
   final tomorrow = today.add(const Duration(days: 1));
   final response1 = await http.get(Uri.parse(
       'https://hourlypricing.comed.com/api?type=daynexttoday&date=${_dateWithZeros(tomorrow)}'));
-  if (response0.statusCode == 200 && response1.statusCode == 200) {
-    return CentPerEnergyRates.fromJavaScriptText(
-        response0.body + response1.body);
-  } else {
-    throw Exception('Failed to load rates from last 24 hours.');
+  if (response1.statusCode != 200) {
+    throw http.ClientException(
+        'Server responded with status: ${response1.statusCode}');
   }
+  return CentPerEnergyRates.fromJavaScriptText(response0.body + response1.body);
 }
 
 Stream<CentPerEnergyRates> streamRatesNextDay() async* {
   while (true) {
-    yield await fetchRatesNextDay();
+    try {
+      yield await fetchRatesNextDay();
+      _logger.info('Prices from ComEd updated.');
+    } on http.ClientException catch (error) {
+      // Ignore errors and just wait another 5 minutes to try again
+      _logger.warning(error);
+    }
     await Future.delayed(const Duration(minutes: 5));
   }
 }

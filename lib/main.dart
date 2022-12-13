@@ -16,12 +16,16 @@
 
 import 'dart:async';
 import 'dart:math';
-import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
 import 'package:tofu/solar.dart';
 import 'package:tofu/comed.dart';
+import 'package:logging/logging.dart';
 
+final _logger = Logger('tofu.main');
 void main() {
+  Logger.root.onRecord.listen((record) {
+    debugPrint('${record.level.name}: ${record.time}: ${record.message}');
+  });
   runApp(const MyApp());
 }
 
@@ -51,12 +55,12 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late Future<EnergyRates> futureRates;
+  late Stream<EnergyRates> streamOfEnergyRates;
 
   @override
   void initState() {
     super.initState();
-    futureRates = fetchRatesNextDay();
+    streamOfEnergyRates = streamRatesNextDay();
   }
 
   @override
@@ -66,7 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: LayoutBuilder(builder: (context, constraints) {
+        child: LayoutBuilder(builder: (_, constraints) {
           final radius = 0.7 *
               min(
                 constraints.maxHeight,
@@ -76,18 +80,15 @@ class _MyHomePageState extends State<MyHomePage> {
             alignment: Alignment.center,
             children: [
               getSolarCircle(radius * 1 / 5),
-              FutureBuilder<EnergyRates>(
-                future: futureRates,
-                builder: (context, snapshot) {
+              StreamBuilder<EnergyRates>(
+                stream: streamOfEnergyRates,
+                builder: (_, snapshot) {
                   if (snapshot.hasData) {
                     return getPriceClock(snapshot.data!, radius * 4 / 5);
                   }
-                  if (snapshot.hasError) {
-                    // TODO: Display a connection error message
-                  }
                   return SizedBox(
-                    width: radius / 10,
-                    height: radius / 10,
+                    width: radius / 2,
+                    height: radius / 2,
                     child: CircularProgressIndicator(
                       strokeWidth: radius / 50,
                     ),
