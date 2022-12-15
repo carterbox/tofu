@@ -1,6 +1,16 @@
 name: tofu
 description: A new Flutter project.
 
+flutter_icons:
+  image_path: "assets/icon/tofuplate.png"
+  android: true
+  web:
+    generate: true
+  windows:
+    generate: true
+  macos:
+    generate: true
+
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -40,6 +50,7 @@ dependencies:
   http: ^0.13.5
   intl: ^0.17.0
   logging: ^1.1.0
+  flutter_launcher_icons: ^0.11.0
 
 dev_dependencies:
   flutter_test:
