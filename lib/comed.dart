@@ -19,6 +19,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart' as intl;
@@ -66,7 +67,7 @@ List<double> getAverageRates(EnergyRates energyRates, int minutesPerBin) {
 List<double> getStrictHourRates(EnergyRates x) {
   // Rates are provided as hour ending, so we convert now into the end of hour
   final now = DateTime.now();
-  final firstHour = now.add(const Duration(hours: 1));
+  final firstHour = now.add(const Duration(hours: 0));
   final finalHour = now.add(const Duration(hours: 24));
   var windowedRates = List<double>.filled(24, 0, growable: false);
   for (int i = 0; i < x.rates.length; i++) {
@@ -232,40 +233,52 @@ class CentPerEnergyRates extends EnergyRates {
 List<chart.PieChartSectionData> timeOfUse(
   EnergyRates rates,
   double width,
+  ThemeData theme,
 ) {
   List<double> smoothedRates = getStrictHourRates(rates);
-  return smoothedRates.map(
-    (x) {
-      if (x == 0.0) {
-        return chart.PieChartSectionData(
-          value: 1,
-          showTitle: false,
-          // Chart cannot render a zero height bar.
-          radius: 0.001,
-        );
-      }
+  var sections = List<chart.PieChartSectionData>.empty(growable: true);
+  for (var i = 0; i < smoothedRates.length; i++) {
+    final x = smoothedRates[i];
+    if (x == 0.0) {
+      sections.add(chart.PieChartSectionData(
+        value: 1,
+        showTitle: false,
+        // Chart cannot render a zero height bar.
+        radius: 0.001,
+        color: theme.primaryColor,
+      ));
+    } else {
       // Large negative bars look really bad.
       double r = x < 0.0 ? -1.0 : x * width / 14.0;
-      return chart.PieChartSectionData(
+      sections.add(chart.PieChartSectionData(
         value: 1,
         showTitle: true,
         title: '${x.toStringAsFixed(1)}${rates.units}',
         radius: r,
         titlePositionPercentageOffset: 0.5 / r * width,
-      );
-    },
-  ).toList();
+        color: i == (DateTime.now().hour + 1) % 24
+            ? theme.highlightColor
+            : theme.primaryColor,
+      ));
+    }
+  }
+  return sections;
 }
 
-chart.PieChart getPriceClock(EnergyRates data, double radius) {
+chart.PieChart getPriceClock(
+  EnergyRates data,
+  double radius,
+  ThemeData theme,
+) {
   return chart.PieChart(
     chart.PieChartData(
       sections: timeOfUse(
         data,
         radius,
+        theme,
       ),
       centerSpaceRadius: radius / 4,
-      startDegreeOffset: -360 * (7 / 24),
+      startDegreeOffset: 360 * (5 / 24),
     ),
   );
 }

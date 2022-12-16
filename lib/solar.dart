@@ -27,13 +27,13 @@ chart.PieChart getSolarCircle(double radius) {
     sections: [
       chart.PieChartSectionData(
         value: 12,
-        color: Colors.amber,
+        color: Colors.indigo,
         showTitle: false,
         radius: radius,
       ),
       chart.PieChartSectionData(
         value: 12,
-        color: Colors.indigo,
+        color: Colors.amber,
         showTitle: false,
         radius: radius,
       ),

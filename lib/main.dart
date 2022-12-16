@@ -72,8 +72,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       drawer: Drawer(
         child: ListView(
-          // Important: Remove any padding from the ListView.
-          padding: EdgeInsets.zero,
           children: <Widget>[
             const Padding(
               padding: EdgeInsets.all(16.0),
@@ -121,7 +119,11 @@ class _MyHomePageState extends State<MyHomePage> {
                 stream: streamOfEnergyRates,
                 builder: (_, snapshot) {
                   if (snapshot.hasData) {
-                    return getPriceClock(snapshot.data!, radius * 4 / 5);
+                    return getPriceClock(
+                      snapshot.data!,
+                      radius * 4 / 5,
+                      Theme.of(context),
+                    );
                   }
                   return SizedBox(
                     width: radius / 2,
