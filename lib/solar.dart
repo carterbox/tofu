@@ -18,26 +18,35 @@
 
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
+import 'package:sunrise_sunset_calc/sunrise_sunset_calc.dart';
 
 /// Return a Widget representing the ratio of daytime to night time
-chart.PieChart getSolarCircle(double radius) {
-  // TODO: Automatically adjust the ratio of day/night according to location and
-  // date
+chart.PieChart getSolarCircle(double radius, DateTime today) {
+  final chicago = getSunriseSunset(
+    41.8781,
+    -87.6298,
+    const Duration(),
+    today,
+  );
+  final clockOffset =
+      chicago.sunrise.toLocal().hour + chicago.sunrise.toLocal().minute / 60;
+  final dayLength = chicago.sunset.difference(chicago.sunrise).inMinutes / 60;
   return chart.PieChart(chart.PieChartData(
     sections: [
       chart.PieChartSectionData(
-        value: 12,
-        color: Colors.indigo,
+        value: dayLength,
+        color: Colors.amber,
         showTitle: false,
         radius: radius,
       ),
       chart.PieChartSectionData(
-        value: 12,
-        color: Colors.amber,
+        value: 24 - dayLength,
+        color: Colors.indigo,
         showTitle: false,
         radius: radius,
       ),
     ],
     centerSpaceRadius: 0,
+    startDegreeOffset: 360.0 / 24.0 * (6 + clockOffset),
   ));
 }
