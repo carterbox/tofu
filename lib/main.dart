@@ -37,9 +37,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'tofu',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
       home: const MyHomePage(title: 'Time OF Use'),
     );
   }
@@ -105,7 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       body: Center(
-        child: LayoutBuilder(builder: (_, constraints) {
+        child: LayoutBuilder(builder: (context, constraints) {
           final radius = 0.7 *
               min(
                 constraints.maxHeight,
@@ -120,12 +117,11 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               StreamBuilder<EnergyRates>(
                 stream: streamOfEnergyRates,
-                builder: (_, snapshot) {
+                builder: (context, snapshot) {
                   if (snapshot.hasData) {
-                    return getPriceClock(
-                      snapshot.data!,
-                      radius * 4 / 5,
-                      Theme.of(context),
+                    return PriceClock(
+                      rates: snapshot.data!,
+                      radius: radius * 4 / 5,
                     );
                   }
                   return SizedBox(

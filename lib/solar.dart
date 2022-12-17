@@ -23,13 +23,12 @@ import 'package:sunrise_sunset_calc/sunrise_sunset_calc.dart';
 /// A widget representing the ratio of daytime to nighttime for [today].
 class SolarCircle extends StatelessWidget {
   final double radius;
-  final DateTime today;
   late final double dayLength;
   late final double startDegreeOffset;
 
   SolarCircle({
     required this.radius,
-    required this.today,
+    required DateTime today,
     super.key,
   }) {
     final chicago = getSunriseSunset(

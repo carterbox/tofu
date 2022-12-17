@@ -229,56 +229,52 @@ class CentPerEnergyRates extends EnergyRates {
   }
 }
 
-/// Return the pie char sections for the time of use
-List<chart.PieChartSectionData> timeOfUse(
-  EnergyRates rates,
-  double width,
-  ThemeData theme,
-) {
-  List<double> smoothedRates = getStrictHourRates(rates);
-  var sections = List<chart.PieChartSectionData>.empty(growable: true);
-  for (var i = 0; i < smoothedRates.length; i++) {
-    final x = smoothedRates[i];
-    if (x == 0.0) {
-      sections.add(chart.PieChartSectionData(
-        value: 1,
-        showTitle: false,
-        // Chart cannot render a zero height bar.
-        radius: 0.001,
-        color: theme.primaryColor,
-      ));
-    } else {
-      // Large negative bars look really bad.
-      double r = x < 0.0 ? -1.0 : x * width / 14.0;
-      sections.add(chart.PieChartSectionData(
-        value: 1,
-        showTitle: true,
-        title: '${x.toStringAsFixed(1)}${rates.units}',
-        radius: r,
-        titlePositionPercentageOffset: 0.5 / r * width,
-        color: i == (DateTime.now().hour + 1) % 24
-            ? theme.highlightColor
-            : theme.primaryColor,
-      ));
-    }
-  }
-  return sections;
-}
+class PriceClock extends StatelessWidget {
+  const PriceClock({
+    required this.rates,
+    required this.radius,
+    Key? key,
+  }) : super(key: key);
 
-chart.PieChart getPriceClock(
-  EnergyRates data,
-  double radius,
-  ThemeData theme,
-) {
-  return chart.PieChart(
-    chart.PieChartData(
-      sections: timeOfUse(
-        data,
-        radius,
-        theme,
+  final EnergyRates rates;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    List<double> smoothedRates = getStrictHourRates(rates);
+    var sections = List<chart.PieChartSectionData>.empty(growable: true);
+    for (var i = 0; i < smoothedRates.length; i++) {
+      final x = smoothedRates[i];
+      if (x == 0.0) {
+        sections.add(chart.PieChartSectionData(
+          value: 1,
+          showTitle: false,
+          // Chart cannot render a zero height bar.
+          radius: 0.001,
+          color: theme.primaryColor,
+        ));
+      } else {
+        // Large negative bars look really bad.
+        double r = x < 0.0 ? -1.0 : x * radius / 14.0;
+        sections.add(chart.PieChartSectionData(
+          value: 1,
+          showTitle: true,
+          title: '${x.toStringAsFixed(1)}${rates.units}',
+          radius: r,
+          titlePositionPercentageOffset: 0.5 / r * radius,
+          color: i == (DateTime.now().hour + 1) % 24
+              ? theme.highlightColor
+              : theme.primaryColor,
+        ));
+      }
+    }
+    return chart.PieChart(
+      chart.PieChartData(
+        sections: sections,
+        centerSpaceRadius: radius / 4,
+        startDegreeOffset: (360 / 24) * 5,
       ),
-      centerSpaceRadius: radius / 4,
-      startDegreeOffset: 360 * (5 / 24),
-    ),
-  );
+    );
+  }
 }
