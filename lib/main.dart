@@ -114,7 +114,10 @@ class _MyHomePageState extends State<MyHomePage> {
           return Stack(
             alignment: Alignment.center,
             children: [
-              getSolarCircle(radius * 1 / 5, DateTime.now()),
+              SolarCircle(
+                radius: radius * 1 / 5,
+                today: DateTime.now(),
+              ),
               StreamBuilder<EnergyRates>(
                 stream: streamOfEnergyRates,
                 builder: (_, snapshot) {

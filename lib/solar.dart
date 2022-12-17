@@ -20,33 +20,51 @@ import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
 import 'package:sunrise_sunset_calc/sunrise_sunset_calc.dart';
 
-/// Return a Widget representing the ratio of daytime to night time
-chart.PieChart getSolarCircle(double radius, DateTime today) {
-  final chicago = getSunriseSunset(
-    41.8781,
-    -87.6298,
-    const Duration(),
-    today,
-  );
-  final clockOffset =
-      chicago.sunrise.toLocal().hour + chicago.sunrise.toLocal().minute / 60;
-  final dayLength = chicago.sunset.difference(chicago.sunrise).inMinutes / 60;
-  return chart.PieChart(chart.PieChartData(
-    sections: [
-      chart.PieChartSectionData(
-        value: dayLength,
-        color: Colors.amber,
-        showTitle: false,
-        radius: radius,
-      ),
-      chart.PieChartSectionData(
-        value: 24 - dayLength,
-        color: Colors.indigo,
-        showTitle: false,
-        radius: radius,
-      ),
-    ],
-    centerSpaceRadius: 0,
-    startDegreeOffset: 360.0 / 24.0 * (6 + clockOffset),
-  ));
+/// A widget representing the ratio of daytime to nighttime for [today].
+class SolarCircle extends StatelessWidget {
+  final double radius;
+  final DateTime today;
+  late final double dayLength;
+  late final double startDegreeOffset;
+
+  SolarCircle({
+    required this.radius,
+    required this.today,
+    super.key,
+  }) {
+    final chicago = getSunriseSunset(
+      41.8781,
+      -87.6298,
+      const Duration(),
+      today,
+    );
+    startDegreeOffset = 15 *
+        (6 + // offset to midnight
+            chicago.sunrise.toLocal().hour +
+            chicago.sunrise.toLocal().minute / 60 // offset to sunrise
+        );
+    dayLength = chicago.sunset.difference(chicago.sunrise).inMinutes / 60;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return chart.PieChart(chart.PieChartData(
+      sections: [
+        chart.PieChartSectionData(
+          value: dayLength,
+          color: Colors.amber,
+          showTitle: false,
+          radius: radius,
+        ),
+        chart.PieChartSectionData(
+          value: 24 - dayLength,
+          color: Colors.indigo,
+          showTitle: false,
+          radius: radius,
+        ),
+      ],
+      centerSpaceRadius: 0,
+      startDegreeOffset: startDegreeOffset,
+    ));
+  }
 }
