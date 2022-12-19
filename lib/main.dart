@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
       darkTheme: ThemeData.from(
         colorScheme: darkColorScheme,
       ),
-      themeMode: ThemeMode.light,
+      themeMode: ThemeMode.system,
     );
   }
 }
@@ -62,12 +62,14 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late Stream<EnergyRates> streamOfEnergyRates;
+  late Stream<DayInfo> streamOfDayInfo;
   int _selectedDestination = 0;
 
   @override
   void initState() {
     super.initState();
     streamOfEnergyRates = streamRatesNextDay();
+    streamOfDayInfo = streamSunriseSunset();
   }
 
   @override
@@ -120,32 +122,41 @@ class _MyHomePageState extends State<MyHomePage> {
           return Stack(
             alignment: Alignment.center,
             children: [
-              SolarCircle(
-                radius: radius * 1 / 5,
-                today: DateTime.now(),
-                dayColor: Colors.amber
-                    .harmonizeWith(Theme.of(context).colorScheme.primary),
-                nightColor: Colors.indigo
-                    .harmonizeWith(Theme.of(context).colorScheme.primary),
-              ),
-              StreamBuilder<EnergyRates>(
-                stream: streamOfEnergyRates,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return PriceClock(
-                      rates: snapshot.data!,
-                      radius: radius * 4 / 5,
+              StreamBuilder(
+                  stream: streamOfDayInfo,
+                  builder: (context, snapshot) {
+                    late final DayInfo today;
+                    if (snapshot.hasData) {
+                      today = snapshot.data!;
+                    } else {
+                      today = const DayInfo(length: 12, sunrise: 6);
+                    }
+                    return SolarCircle(
+                      radius: radius * 1 / 5,
+                      today: today,
+                      dayColor: Colors.amber
+                          .harmonizeWith(Theme.of(context).colorScheme.primary),
+                      nightColor: Colors.indigo
+                          .harmonizeWith(Theme.of(context).colorScheme.primary),
                     );
-                  }
-                  return SizedBox(
-                    width: radius / 2,
-                    height: radius / 2,
-                    child: CircularProgressIndicator(
-                      strokeWidth: radius / 50,
-                    ),
-                  );
-                },
-              ),
+                  }),
+              StreamBuilder<EnergyRates>(
+                  stream: streamOfEnergyRates,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return PriceClock(
+                        rates: snapshot.data!,
+                        radius: radius * 4 / 5,
+                      );
+                    }
+                    return SizedBox(
+                      width: radius / 2,
+                      height: radius / 2,
+                      child: CircularProgressIndicator(
+                        strokeWidth: radius / 50,
+                      ),
+                    );
+                  }),
             ],
           );
         }),

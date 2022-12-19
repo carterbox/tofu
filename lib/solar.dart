@@ -20,56 +20,75 @@ import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
 import 'package:sunrise_sunset_calc/sunrise_sunset_calc.dart';
 
+/// Represents the time of [sunrise] and [length] of the day in hours
+class DayInfo {
+  final double sunrise;
+  final double length;
+
+  const DayInfo({
+    required this.sunrise,
+    required this.length,
+  });
+
+  factory DayInfo.forToday() {
+    return DayInfo.fromSunsetSunriseResult(getSunriseSunset(
+      41.8781,
+      -87.6298,
+      const Duration(),
+      DateTime.now(),
+    ));
+  }
+
+  factory DayInfo.fromSunsetSunriseResult(SunriseSunsetResult result) {
+    return DayInfo(
+        sunrise: result.sunrise.toLocal().hour +
+            result.sunrise.toLocal().minute / 60,
+        length: result.sunset.difference(result.sunrise).inMinutes / 60);
+  }
+}
+
+// Yield updated DayInfo every 24 hours
+Stream<DayInfo> streamSunriseSunset() async* {
+  while (true) {
+    yield DayInfo.forToday();
+    await Future.delayed(const Duration(hours: 24));
+  }
+}
+
 /// A widget representing the ratio of daytime to nighttime for [today].
 class SolarCircle extends StatelessWidget {
   final double radius;
-  late final double dayLength;
-  late final double startDegreeOffset;
+  final DayInfo today;
   final Color dayColor;
   final Color nightColor;
-  SolarCircle({
+
+  const SolarCircle({
     required this.radius,
-    required DateTime today,
+    required this.today,
     this.dayColor = Colors.amber,
     this.nightColor = Colors.indigo,
     super.key,
-  }) {
-    // FIXME: Only compute this once per day instead of every frame
-    // final chicago = getSunriseSunset(
-    //   41.8781,
-    //   -87.6298,
-    //   const Duration(),
-    //   today,
-    // );
-    // startDegreeOffset = 15 *
-    //     (6 + // offset to midnight
-    //         chicago.sunrise.toLocal().hour +
-    //         chicago.sunrise.toLocal().minute / 60 // offset to sunrise
-    //     );
-    // dayLength = chicago.sunset.difference(chicago.sunrise).inMinutes / 60;
-    dayLength = 12.0;
-    startDegreeOffset = 15 * 6;
-  }
+  });
 
   @override
   Widget build(BuildContext context) {
     return chart.PieChart(chart.PieChartData(
       sections: [
         chart.PieChartSectionData(
-          value: dayLength,
+          value: today.length,
           color: dayColor,
           showTitle: false,
           radius: radius,
         ),
         chart.PieChartSectionData(
-          value: 24 - dayLength,
+          value: 24 - today.length,
           color: nightColor,
           showTitle: false,
           radius: radius,
         ),
       ],
       centerSpaceRadius: 0,
-      startDegreeOffset: startDegreeOffset,
+      startDegreeOffset: 15 * (6 + today.sunrise),
     ));
   }
 }
