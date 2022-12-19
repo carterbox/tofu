@@ -1,4 +1,4 @@
-// tofu, an app for visualizing time-of-use electricity rates
+// tofu, an app for monitoring time-of-use electricity rates
 // Copyright (C) 2022 Daniel Jackson Ching
 //
 // This program is free software: you can redistribute it and/or modify
@@ -163,6 +163,12 @@ abstract class EnergyRates {
   /// The unit of measure for the [rates].
   String get units;
 
+  /// Above this value is a high rate of [units] per kWh
+  double get rateHighThreshold;
+
+  /// Above this value is a middle rate of [units] per kWh
+  double get rateMidThreshold;
+
   const EnergyRates({
     required this.dates,
     required this.rates,
@@ -173,6 +179,10 @@ abstract class EnergyRates {
 class CentPerEnergyRates extends EnergyRates {
   @override
   final String units = '\u00A2';
+  @override
+  final double rateHighThreshold = 15;
+  @override
+  final double rateMidThreshold = 7.5;
 
   const CentPerEnergyRates({
     required super.dates,
@@ -247,6 +257,7 @@ class PriceClock extends StatelessWidget {
     var sections = List<chart.PieChartSectionData>.empty(growable: true);
     for (var i = 0; i < smoothedRates.length; i++) {
       final x = smoothedRates[i];
+      // TODO: Use switch to set color according to brackets
       if (x == 0.0) {
         sections.add(chart.PieChartSectionData(
           value: 1,

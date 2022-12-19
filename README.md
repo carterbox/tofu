@@ -1,19 +1,18 @@
-# tofu
+# TOfU
 
-A Time OF Use monitory for electricity rates.
+A Time OF Use monitoring for electricity rates. Displays trends, real-time, and
+predicted electricity rates as 24 hour clock.
 
-Displays trends, real-time, and predicted electricity rates as a polar area
-chart.
+## Current Widgets
 
-## Getting Started
+When should I run my appliances today? Displays the live hourly average rate
+for the current hour and the predicted hourly price for as much of the next 24
+hours as possible.
 
-This project is a starting point for a Flutter application.
+## Future Widgets
 
-A few resources to get you started if this is your first Flutter project:
-
-* [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-* [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+Should I switch to hourly pricing? Overlays your usage history ontop of the
+average hourly rate history for the past 3 months, and summarizes whether you
+would save money by switching to hourly pricing with no behavior change.
+Suggest what weekly habit changes may flip the economics towards hourly
+pricing.

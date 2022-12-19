@@ -1,4 +1,4 @@
-// tofu, an app for visualizing time-of-use electricity rates
+// tofu, an app for monitoring time-of-use electricity rates
 // Copyright (C) 2022 Daniel Jackson Ching
 //
 // This program is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'tofu',
+      title: 'TOfU',
       home: const MyHomePage(title: 'Time OF Use'),
       theme: ThemeData.from(
         colorScheme: lightColorScheme,

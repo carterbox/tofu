@@ -1,5 +1,5 @@
 name: tofu
-description: A new Flutter project.
+description: A Time OF Use monitoring app for electricity rates. Displays trends, real-time, and predicted electricity rates as 24 hour clock.
 
 flutter_icons:
   image_path: "assets/icon/tofuplate.png"
