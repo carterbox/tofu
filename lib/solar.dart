@@ -25,24 +25,30 @@ class SolarCircle extends StatelessWidget {
   final double radius;
   late final double dayLength;
   late final double startDegreeOffset;
-
+  final Color dayColor;
+  final Color nightColor;
   SolarCircle({
     required this.radius,
     required DateTime today,
+    this.dayColor = Colors.amber,
+    this.nightColor = Colors.indigo,
     super.key,
   }) {
-    final chicago = getSunriseSunset(
-      41.8781,
-      -87.6298,
-      const Duration(),
-      today,
-    );
-    startDegreeOffset = 15 *
-        (6 + // offset to midnight
-            chicago.sunrise.toLocal().hour +
-            chicago.sunrise.toLocal().minute / 60 // offset to sunrise
-        );
-    dayLength = chicago.sunset.difference(chicago.sunrise).inMinutes / 60;
+    // FIXME: Only compute this once per day instead of every frame
+    // final chicago = getSunriseSunset(
+    //   41.8781,
+    //   -87.6298,
+    //   const Duration(),
+    //   today,
+    // );
+    // startDegreeOffset = 15 *
+    //     (6 + // offset to midnight
+    //         chicago.sunrise.toLocal().hour +
+    //         chicago.sunrise.toLocal().minute / 60 // offset to sunrise
+    //     );
+    // dayLength = chicago.sunset.difference(chicago.sunrise).inMinutes / 60;
+    dayLength = 12.0;
+    startDegreeOffset = 15 * 6;
   }
 
   @override
@@ -51,13 +57,13 @@ class SolarCircle extends StatelessWidget {
       sections: [
         chart.PieChartSectionData(
           value: dayLength,
-          color: Colors.amber,
+          color: dayColor,
           showTitle: false,
           radius: radius,
         ),
         chart.PieChartSectionData(
           value: 24 - dayLength,
-          color: Colors.indigo,
+          color: nightColor,
           showTitle: false,
           radius: radius,
         ),

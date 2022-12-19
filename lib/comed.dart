@@ -242,6 +242,7 @@ class PriceClock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // FIXME: Only do rendering related things in Widget not data processing
     List<double> smoothedRates = getStrictHourRates(rates);
     var sections = List<chart.PieChartSectionData>.empty(growable: true);
     for (var i = 0; i < smoothedRates.length; i++) {
@@ -252,7 +253,7 @@ class PriceClock extends StatelessWidget {
           showTitle: false,
           // Chart cannot render a zero height bar.
           radius: 0.001,
-          color: theme.primaryColor,
+          color: theme.colorScheme.secondary,
         ));
       } else {
         // Large negative bars look really bad.
@@ -264,8 +265,8 @@ class PriceClock extends StatelessWidget {
           radius: r,
           titlePositionPercentageOffset: 0.5 / r * radius,
           color: i == (DateTime.now().hour + 1) % 24
-              ? theme.highlightColor
-              : theme.primaryColor,
+              ? theme.colorScheme.primary
+              : theme.colorScheme.secondary,
         ));
       }
     }

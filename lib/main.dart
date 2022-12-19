@@ -17,9 +17,11 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:tofu/theme.dart';
 import 'package:tofu/solar.dart';
 import 'package:tofu/comed.dart';
 import 'package:logging/logging.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 
 final _logger = Logger('tofu.main');
 void main() {
@@ -38,6 +40,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'tofu',
       home: const MyHomePage(title: 'Time OF Use'),
+      theme: ThemeData.from(
+        colorScheme: lightColorScheme,
+      ),
+      darkTheme: ThemeData.from(
+        colorScheme: darkColorScheme,
+      ),
+      themeMode: ThemeMode.light,
     );
   }
 }
@@ -114,6 +123,10 @@ class _MyHomePageState extends State<MyHomePage> {
               SolarCircle(
                 radius: radius * 1 / 5,
                 today: DateTime.now(),
+                dayColor: Colors.amber
+                    .harmonizeWith(Theme.of(context).colorScheme.primary),
+                nightColor: Colors.indigo
+                    .harmonizeWith(Theme.of(context).colorScheme.primary),
               ),
               StreamBuilder<EnergyRates>(
                 stream: streamOfEnergyRates,
