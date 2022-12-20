@@ -4,6 +4,8 @@ description: A Time OF Use monitoring app for electricity rates. Displays trends
 flutter_icons:
   image_path: "assets/icon/tofuplate.png"
   android: true
+  adaptive_icon_background: "assets/icon/tofuplate-background.png"
+  adaptive_icon_foreground: "assets/icon/tofuplate-foreground.png"
   web:
     generate: true
   windows:
