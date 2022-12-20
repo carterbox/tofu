@@ -23,7 +23,6 @@ import 'package:tofu/comed.dart';
 import 'package:logging/logging.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 
-final _logger = Logger('tofu.main');
 void main() {
   Logger.root.onRecord.listen((record) {
     debugPrint('${record.level.name}: ${record.time}: ${record.message}');
@@ -114,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: LayoutBuilder(builder: (context, constraints) {
-          final radius = 0.7 *
+          double viewRadius = 0.5 *
               min(
                 constraints.maxHeight,
                 constraints.maxWidth,
@@ -132,7 +131,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       today = const DayInfo(length: 12, sunrise: 6);
                     }
                     return SolarCircle(
-                      radius: radius * 1 / 5,
+                      radius: viewRadius / 4,
                       today: today,
                       dayColor: Colors.amber
                           .harmonizeWith(Theme.of(context).colorScheme.primary),
@@ -146,14 +145,14 @@ class _MyHomePageState extends State<MyHomePage> {
                     if (snapshot.hasData) {
                       return PriceClock(
                         rates: snapshot.data!,
-                        radius: radius * 4 / 5,
+                        radius: viewRadius,
                       );
                     }
                     return SizedBox(
-                      width: radius / 2,
-                      height: radius / 2,
+                      width: viewRadius / 2,
+                      height: viewRadius / 2,
                       child: CircularProgressIndicator(
-                        strokeWidth: radius / 50,
+                        strokeWidth: viewRadius / 50,
                       ),
                     );
                   }),

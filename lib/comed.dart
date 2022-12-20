@@ -69,7 +69,7 @@ List<double> getStrictHourRates(EnergyRates x) {
   final now = DateTime.now();
   final firstHour = now.add(const Duration(hours: 0));
   final finalHour = now.add(const Duration(hours: 24));
-  var windowedRates = List<double>.filled(24, 0, growable: false);
+  var windowedRates = List<double>.filled(24, double.nan, growable: false);
   for (int i = 0; i < x.rates.length; i++) {
     final date = x.dates[i];
     final rate = x.rates[i];
@@ -240,51 +240,52 @@ class CentPerEnergyRates extends EnergyRates {
 }
 
 class PriceClock extends StatelessWidget {
-  const PriceClock({
-    required this.rates,
-    required this.radius,
-    Key? key,
-  }) : super(key: key);
-
   final EnergyRates rates;
-  final double radius;
+  late final double innerRadius;
+  late final double outerRadius;
+
+  PriceClock({
+    super.key,
+    required this.rates,
+    required radius,
+  }) {
+    innerRadius = radius * 0.25;
+    outerRadius = radius * 0.75;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final double barHeightMaximum = (rates.rateHighThreshold * 1.1);
     // FIXME: Only do rendering related things in Widget not data processing
     List<double> smoothedRates = getStrictHourRates(rates);
     var sections = List<chart.PieChartSectionData>.empty(growable: true);
-    for (var i = 0; i < smoothedRates.length; i++) {
-      final x = smoothedRates[i];
-      // TODO: Use switch to set color according to brackets
-      if (x == 0.0) {
-        sections.add(chart.PieChartSectionData(
-          value: 1,
-          showTitle: false,
-          // Chart cannot render a zero height bar.
-          radius: 0.001,
-          color: theme.colorScheme.secondary,
-        ));
-      } else {
+    for (int hour = 0; hour < smoothedRates.length; hour++) {
+      final double price = smoothedRates[hour];
+      double barHeight = price;
+      if (price < 0.0) {
         // Large negative bars look really bad.
-        double r = x < 0.0 ? -1.0 : x * radius / 14.0;
-        sections.add(chart.PieChartSectionData(
-          value: 1,
-          showTitle: true,
-          title: '${x.toStringAsFixed(1)}${rates.units}',
-          radius: r,
-          titlePositionPercentageOffset: 0.5 / r * radius,
-          color: i == (DateTime.now().hour + 1) % 24
-              ? theme.colorScheme.primary
-              : theme.colorScheme.secondary,
-        ));
+        barHeight = -1.0;
       }
+      if (price == 0.0 || !price.isFinite) {
+        // Chart cannot render a zero height bar.
+        barHeight = 0.001;
+      }
+      sections.add(chart.PieChartSectionData(
+        value: 1,
+        showTitle: price.isFinite,
+        title: '${price.toStringAsFixed(1)}${rates.units}',
+        radius: outerRadius * barHeight / barHeightMaximum,
+        titlePositionPercentageOffset: 0.66 * barHeightMaximum / barHeight,
+        color: hour == (DateTime.now().hour + 1) % 24
+            ? theme.colorScheme.inversePrimary
+            : theme.colorScheme.primary,
+      ));
     }
     return chart.PieChart(
       chart.PieChartData(
         sections: sections,
-        centerSpaceRadius: radius / 4,
+        centerSpaceRadius: innerRadius,
         startDegreeOffset: (360 / 24) * 5,
       ),
     );
