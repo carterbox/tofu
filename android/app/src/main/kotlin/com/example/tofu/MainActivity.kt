@@ -1,4 +1,4 @@
-package com.example.tofu
+package io.github.carterbox.tofu
 
 import io.flutter.embedding.android.FlutterActivity
 
