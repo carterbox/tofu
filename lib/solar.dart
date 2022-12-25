@@ -72,23 +72,47 @@ class SolarCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return chart.PieChart(chart.PieChartData(
-      sections: [
-        chart.PieChartSectionData(
-          value: today.length,
-          color: dayColor,
-          showTitle: false,
-          radius: radius,
-        ),
-        chart.PieChartSectionData(
-          value: 24 - today.length,
-          color: nightColor,
-          showTitle: false,
-          radius: radius,
-        ),
+    final diameter = 2 * radius;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        chart.PieChart(chart.PieChartData(
+          sections: [
+            chart.PieChartSectionData(
+              value: today.length,
+              color: dayColor,
+              showTitle: false,
+              radius: radius,
+            ),
+            chart.PieChartSectionData(
+              value: 24 - today.length,
+              color: nightColor,
+              showTitle: false,
+              radius: radius,
+            ),
+          ],
+          centerSpaceRadius: 0,
+          startDegreeOffset: 15 * (6 + today.sunrise),
+        )),
+        SizedBox(
+            width: diameter,
+            height: diameter,
+            child: Align(
+                alignment: const Alignment(0.0, 0.5),
+                child: Icon(
+                  Icons.dark_mode_outlined,
+                  color: dayColor,
+                ))),
+        SizedBox(
+            width: diameter,
+            height: diameter,
+            child: Align(
+                alignment: const Alignment(0.0, -0.5),
+                child: Icon(
+                  Icons.light_mode,
+                  color: nightColor,
+                )))
       ],
-      centerSpaceRadius: 0,
-      startDegreeOffset: 15 * (6 + today.sunrise),
-    ));
+    );
   }
 }
