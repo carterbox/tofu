@@ -239,6 +239,8 @@ class CentPerEnergyRates extends EnergyRates {
   }
 }
 
+/// A circular bar chart showing the current and forecasted energy rates for a
+/// 24 hour period
 class PriceClock extends StatelessWidget {
   final EnergyRates rates;
   late final double innerRadius;
@@ -289,5 +291,60 @@ class PriceClock extends StatelessWidget {
         startDegreeOffset: (360 / 24) * 5,
       ),
     );
+  }
+}
+
+/// A button which toggles a bottom drawer with text explaining the Price Clock
+class PriceClockExplainerButton extends StatefulWidget {
+  const PriceClockExplainerButton({super.key});
+
+  @override
+  State<PriceClockExplainerButton> createState() =>
+      _PriceClockExplainerButtonState();
+}
+
+class _PriceClockExplainerButtonState extends State<PriceClockExplainerButton> {
+  bool _showingBottomSheet = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+        child: const Icon(Icons.question_mark),
+        onPressed: () {
+          if (_showingBottomSheet) {
+            _showingBottomSheet = false;
+            Navigator.pop(context);
+            return;
+          }
+          _showingBottomSheet = true;
+          showBottomSheet(
+            context: context,
+            builder: (context) {
+              return Padding(
+                  padding: const EdgeInsets.only(top: 50),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Padding(
+                        padding: EdgeInsets.only(left: 20, right: 20),
+                        child: Text(
+                          'When should you run your appliances?',
+                          textAlign: TextAlign.left,
+                          textScaleFactor: 1.5,
+                        ),
+                      ),
+                      Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Text(
+                            'This chart shows the current and forecasted hourly average rates for as much of the next 24 hours as possible. Run your appliances when electricity rates are low.',
+                            textAlign: TextAlign.left,
+                            textScaleFactor: 1.0,
+                          ))
+                    ],
+                  ));
+            },
+          );
+        });
   }
 }

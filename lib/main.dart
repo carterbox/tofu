@@ -55,6 +55,7 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [
         Locale('en', 'US'),
       ],
+      debugShowCheckedModeBanner: true,
     );
   }
 }
@@ -120,6 +121,8 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
+      floatingActionButton: const PriceClockExplainerButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: Center(
         child: LayoutBuilder(builder: (context, constraints) {
           double viewRadius = 0.5 *
