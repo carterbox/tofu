@@ -134,7 +134,8 @@ Future<CentPerEnergyRates> fetchRatesNextDay() async {
     throw http.ClientException(
         'Server responded with status: ${response1.statusCode}');
   }
-  return CentPerEnergyRates.fromJavaScriptText(response0.body + response1.body);
+  return CentPerEnergyRates.fromJavaScriptText(response0.body + response1.body)
+      .toExactly24Hours();
 }
 
 Stream<CentPerEnergyRates> streamRatesNextDay() async* {
@@ -230,6 +231,28 @@ class CentPerEnergyRates extends EnergyRates {
     );
   }
 
+  /// Trim energy rates to exactly 24 hours in the future
+  CentPerEnergyRates toExactly24Hours() {
+    // Rates are provided as hour ending, so we convert now into the end of hour
+    final now = DateTime.now();
+    final firstHour = now.add(const Duration(hours: 0));
+    final finalHour = now.add(const Duration(hours: 24));
+    var windowedRates = List<double>.filled(24, double.nan, growable: false);
+    var windowedDates = List<DateTime>.filled(24, DateTime(0), growable: false);
+    for (int i = 0; i < rates.length; i++) {
+      final date = dates[i];
+      final rate = rates[i];
+      if (date.isAfter(firstHour) && date.isBefore(finalHour)) {
+        windowedRates[date.hour] = rate;
+        windowedDates[date.hour] = date;
+      }
+    }
+    return CentPerEnergyRates(
+      rates: windowedRates,
+      dates: windowedDates,
+    );
+  }
+
   /// Concatenate another [CentPerEnergyRates] to this one.
   CentPerEnergyRates operator +(CentPerEnergyRates other) {
     return CentPerEnergyRates(
@@ -242,13 +265,13 @@ class CentPerEnergyRates extends EnergyRates {
 /// A circular bar chart showing the current and forecasted energy rates for a
 /// 24 hour period
 class PriceClock extends StatelessWidget {
-  final EnergyRates rates;
+  final EnergyRates energyRates;
   late final double innerRadius;
   late final double outerRadius;
 
   PriceClock({
     super.key,
-    required this.rates,
+    required this.energyRates,
     required radius,
   }) {
     innerRadius = radius * 0.25;
@@ -258,12 +281,10 @@ class PriceClock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final double barHeightMaximum = (rates.rateHighThreshold * 1.1);
-    // FIXME: Only do rendering related things in Widget not data processing
-    List<double> smoothedRates = getStrictHourRates(rates);
+    final double barHeightMaximum = (energyRates.rateHighThreshold * 1.1);
     var sections = List<chart.PieChartSectionData>.empty(growable: true);
-    for (int hour = 0; hour < smoothedRates.length; hour++) {
-      final double price = smoothedRates[hour];
+    for (int hour = 0; hour < energyRates.rates.length; hour++) {
+      final double price = energyRates.rates[hour];
       double barHeight = price;
       if (price < 0.0) {
         // Large negative bars look really bad.
@@ -276,7 +297,7 @@ class PriceClock extends StatelessWidget {
       sections.add(chart.PieChartSectionData(
         value: 1,
         showTitle: price.isFinite,
-        title: '${price.toStringAsFixed(1)}${rates.units}',
+        title: '${price.toStringAsFixed(1)}${energyRates.units}',
         radius: outerRadius * barHeight / barHeightMaximum,
         titlePositionPercentageOffset: 0.66 * barHeightMaximum / barHeight,
         color: hour == (DateTime.now().hour + 1) % 24

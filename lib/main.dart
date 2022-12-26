@@ -156,7 +156,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   builder: (context, snapshot) {
                     if (snapshot.hasData) {
                       return PriceClock(
-                        rates: snapshot.data!,
+                        energyRates: snapshot.data!,
                         radius: viewRadius,
                       );
                     }
