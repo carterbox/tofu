@@ -319,6 +319,9 @@ class _PriceClockExplainerButtonState extends State<PriceClockExplainerButton> {
           _showingBottomSheet = true;
           showBottomSheet(
             context: context,
+            constraints: const BoxConstraints(
+              maxWidth: double.infinity,
+            ),
             builder: (context) {
               return Padding(
                   padding: const EdgeInsets.only(top: 50),
