@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+
+Name=TOfU
+Comment=Time OF Use monitoring for electricity rates.
+Categories=Utility;
+
+Icon=io.github.carterbox.Tofu
+Exec=tofu
+Terminal=false
+StartupWMClass=tofu

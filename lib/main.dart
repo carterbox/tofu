@@ -55,7 +55,6 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [
         Locale('en', 'US'),
       ],
-      debugShowCheckedModeBanner: true,
     );
   }
 }
