@@ -11,7 +11,7 @@ modules:
       - mkdir -p /app/share/applications
       - mv -vn io.github.carterbox.Tofu.desktop /app/share/applications/
       - mkdir -p /app/share/metainfo
-      # - cp -r io.github.carterbox.Tofu.metainfo.xml /app/share/metainfo/
+      - cp -r io.github.carterbox.Tofu.metainfo.xml /app/share/metainfo/
       - mkdir -p /app/share/icons/hicolor/512x512/apps
       - cp -v icon.png /app/share/icons/hicolor/512x512/apps/io.github.carterbox.Tofu.png
       - mkdir -p /app/Tofu
@@ -23,12 +23,6 @@ modules:
       - type: archive
         url: https://github.com/carterbox/tofu/releases/download/1.0.2/tofu-linux-x86_64-1.0.2.tar.gz
         sha256: 5ee7e33c23b8011cc53c2fcc9102d92a5383315818626416535f29ad11e9a237
-      - type: file
-        path: io.github.carterbox.Tofu.metainfo.xml
-      - type: file
-        path: io.github.carterbox.Tofu.desktop
-      - type: file
-        path: icon.png
 
 finish-args:
   - --share=network
