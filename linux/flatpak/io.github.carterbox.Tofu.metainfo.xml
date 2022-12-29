@@ -5,7 +5,6 @@
     <metadata_license>FSFAP</metadata_license>
     <project_license>GPL-3.0-or-later</project_license>
     <name>TOfU</name>
-    <icon>stock</icon>
     <summary>Time OF Use monitoring for electricity rates</summary>
 
     <description>
@@ -35,8 +34,21 @@
 
     <requires>
         <display_length compare="gt">xsmall</display_length>
+        <display_length compare="lt">xlarge</display_length>
         <internet>always</internet>
     </requires>
+
+    <recommends>
+        <display_length>small</display_length>
+        <display_length>medium</display_length>
+    </recommends>
+
+    <supports>
+        <control>pointing</control>
+        <control>keyboard</control>
+        <control>touch</control>
+        <control>tablet</control>
+    </supports>
 
     <content_rating type="oars-1.0" />
 
