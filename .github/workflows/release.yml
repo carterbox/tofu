@@ -16,15 +16,15 @@ jobs:
       - name: Install Flutter dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libx11-dev pkg-config cmake ninja-build libblkid-dev
+          sudo apt-get install -y libgtk-3-dev ninja-build
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: beta
+          channel: "stable"
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build Flutter linux app bundle
         run: |
@@ -34,11 +34,14 @@ jobs:
 
       - name: Compress Flutter build
         run: |
+          cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/x64/release/bundle/io.github.carterbox.Tofu.metainfo.xml
+          cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/x64/release/bundle/io.github.carterbox.Tofu.desktop
+          cp -v web/icons/Icon-maskable-512.png build/linux/x64/release/bundle/icon.png
           tar -C build/linux/x64/release/bundle -acvf tofu-linux-x86_64-${{ github.ref_name }}.tar.gz .
           sha256sum tofu-linux-x86_64-${{ github.ref_name }}.tar.gz > tofu-linux-x86_64-${{ github.ref_name }}-sha256sum.txt
 
       - name: Upload files as artifacts to the release
-        uses: softprops/action-gh-release@v0.1.14
+        uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
             tofu-linux-x86_64-${{ github.ref_name }}-sha256sum.txt
