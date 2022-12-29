@@ -1,6 +1,6 @@
 app-id: io.github.carterbox.Tofu
 runtime: org.freedesktop.Platform
-runtime-version: '22.08'
+runtime-version: "22.08"
 sdk: org.freedesktop.Sdk
 command: tofu
 modules:
@@ -8,33 +8,30 @@ modules:
     buildsystem: simple
     only-arches: x86_64
     build-commands:
-      - mkdir -p Tofu
-      - tar -xf Tofu-Linux-Portable.tar.gz -C Tofu
-      - cp -r Tofu /app/
+      - mkdir -p /app/share/applications
+      - mv -vn io.github.carterbox.Tofu.desktop /app/share/applications/
+      - mkdir -p /app/share/metainfo
+      # - cp -r io.github.carterbox.Tofu.metainfo.xml /app/share/metainfo/
+      - mkdir -p /app/share/icons/hicolor/512x512/apps
+      - cp -v icon.png /app/share/icons/hicolor/512x512/apps/io.github.carterbox.Tofu.png
+      - mkdir -p /app/Tofu
+      - mv -vn * /app/Tofu/
       - chmod +x /app/Tofu/tofu
       - mkdir -p /app/bin
       - ln -s /app/Tofu/tofu /app/bin/tofu
-      # - mkdir -p /app/share/metainfo
-      # - cp -r io.github.carterbox.Tofu.metainfo.xml /app/share/metainfo/
-      # - mkdir -p /app/share/icons/hicolor/scalable/apps
-      # - cp -r icon.svg /app/share/icons/hicolor/scalable/apps/io.github.carterbox.Tofu.svg
-      - mkdir -p /app/share/applications
-      - cp -r io.github.carterbox.Tofu.desktop /app/share/applications/
-      # - mkdir -p /app/share/appdata
-      # - cp -r io.github.carterbox.Tofu.metainfo.xml /app/share/appdata/
     sources:
-      # - type: file
-      #   path: io.github.carterbox.Tofu.metainfo.xml
+      - type: archive
+        url: https://github.com/carterbox/tofu/releases/download/1.0.2/tofu-linux-x86_64-1.0.2.tar.gz
+        sha256: 5ee7e33c23b8011cc53c2fcc9102d92a5383315818626416535f29ad11e9a237
+      - type: file
+        path: io.github.carterbox.Tofu.metainfo.xml
       - type: file
         path: io.github.carterbox.Tofu.desktop
-      # - type: file
-      #   path: icon.svg
       - type: file
-        path: Tofu-Linux-Portable.tar.gz
+        path: icon.png
 
 finish-args:
   - --share=network
   - --socket=wayland
   - --socket=fallback-x11
   - --device=dri
-
