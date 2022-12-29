@@ -1,0 +1,52 @@
+name: Build Release Appbundles
+
+on:
+  workflow_dispatch: # Enable manual run
+  release:
+    types: [published]
+
+env:
+  project-id: io.github.carterbox.tofu
+
+jobs:
+  build-flutter-linux-x86:
+    name: Build and compress a Flutter linux app bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Flutter dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libx11-dev pkg-config cmake ninja-build libblkid-dev
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: beta
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Build Flutter linux app bundle
+        run: |
+          flutter config --enable-linux-desktop
+          flutter pub get
+          flutter build linux --release
+
+      - name: Compress Flutter build
+        run: |
+          tar -C build/linux/x64/release/bundle -acvf tofu-linux-x86_64-${{ github.ref_name }}.tar.gz .
+          sha256sum tofu-linux-x86_64-${{ github.ref_name }}.tar.gz > tofu-linux-x86_64-${{ github.ref_name }}-sha256sum.txt
+
+      - name: Upload files as artifacts to the release
+        uses: softprops/action-gh-release@v0.1.14
+        with:
+          files: |
+            tofu-linux-x86_64-${{ github.ref_name }}-sha256sum.txt
+            tofu-linux-x86_64-${{ github.ref_name }}.tar.gz
+          token: ${{ secrets.LINUX_RELEASE_TOKEN }}
+
+      # - name: Upload app archive for next steps
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: tofu-archive-x86_64
+      #     path: tofu-linux-x86_64-${{ github.ref_name }}.tar.gz
