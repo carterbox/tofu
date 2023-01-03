@@ -71,8 +71,8 @@ jobs:
 
       - name: Unpack upload signing keys from key store
         run: |
-          base64 -d ${{ secrets.PLAY_UPLOAD_KEY_PROPERTIES }} > android/key.properties
-          base64 -d ${{ secrets.PLAY_UPLOAD_KEYSTORE }} > android/app/google-play-keystore.jks
+          (base64 -d < ${{ secrets.PLAY_UPLOAD_KEY_PROPERTIES }}) > android/key.properties
+          (base64 -d < ${{ secrets.PLAY_UPLOAD_KEYSTORE }}) > android/app/google-play-keystore.jks
 
       - name: Build Flutter Android app bundle
         run: |
