@@ -69,13 +69,14 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v3
 
+      # https://docs.github.com/en/actions/security-guides/encrypted-secrets#storing-base64-binary-blobs-as-secrets
       - name: Unpack upload signing keys from key store
         env:
           PLAY_UPLOAD_KEY_PROPERTIES: ${{ secrets.PLAY_UPLOAD_KEY_PROPERTIES }}
           PLAY_UPLOAD_KEYSTORE: ${{ secrets.PLAY_UPLOAD_KEYSTORE }}
         run: |
-          echo $PLAY_UPLOAD_KEY_PROPERTIES | base64 -d > android/key.properties
-          echo $PLAY_UPLOAD_KEYSTORE | base64 -d > android/app/google-play-keystore.jks
+          echo "$PLAY_UPLOAD_KEY_PROPERTIES"==== | fold -w 4 | sed '$ d' | tr -d '\n' | base64 -d > android/key.properties
+          echo "$PLAY_UPLOAD_KEYSTORE"==== | fold -w 4 | sed '$ d' | tr -d '\n' | base64 -d > android/app/google-play-keystore.jks
 
       - name: Build Flutter Android app bundle
         run: |
