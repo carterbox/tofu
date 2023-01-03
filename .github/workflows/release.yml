@@ -10,7 +10,7 @@ env:
 
 jobs:
   build-flutter-linux-x86:
-    name: Build and compress a Flutter linux app bundle
+    name: Build and compress a Flutter Linux app bundle
     runs-on: ubuntu-latest
     steps:
       - name: Install Flutter dependencies
@@ -18,15 +18,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev ninja-build
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: "stable"
 
       - name: Checkout source
         uses: actions/checkout@v3
 
-      - name: Build Flutter linux app bundle
+      - name: Build Flutter Linux app bundle
         run: |
           flutter config --enable-linux-desktop
           flutter pub get
@@ -53,3 +52,35 @@ jobs:
       #   with:
       #     name: tofu-archive-x86_64
       #     path: tofu-linux-x86_64-${{ github.ref_name }}.tar.gz
+
+  build-flutter-google-play:
+    name: Build and publish an Android app bundle for Google Play
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v2
+        with:
+          distribution: "zulu"
+          java-version: "11"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Unpack upload signing keys from key store
+        run: |
+          base64 -d ${{ secrets.PLAY_UPLOAD_KEY_PROPERTIES }} > android/key.properties
+          base64 -d ${{ secrets.PLAY_UPLOAD_KEYSTORE }} > android/app/google-play-keystore.jks
+
+      - name: Build Flutter Android app bundle
+        run: |
+          flutter pub get
+          flutter build appbundle --release
+
+      - uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: io.github.carterbox.tofu
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
