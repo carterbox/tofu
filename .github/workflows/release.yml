@@ -88,4 +88,6 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: io.github.carterbox.tofu
+          track: alpha
+          releaseName: ${{ github.ref_name }}
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
