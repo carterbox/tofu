@@ -15,19 +15,26 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
-import 'package:flutter/material.dart';
-import 'package:tofu/theme.dart';
-import 'package:tofu/solar.dart';
-import 'package:tofu/comed.dart';
-import 'package:logging/logging.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
+import 'package:tofu/comed.dart';
+import 'package:tofu/solar.dart';
+import 'package:tofu/theme.dart';
+import 'package:window_size/window_size.dart';
 
 void main() {
   Logger.root.onRecord.listen((record) {
     debugPrint('${record.level.name}: ${record.time}: ${record.message}');
   });
+  WidgetsFlutterBinding.ensureInitialized();
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    setWindowMinSize(const Size(500, 500));
+    setWindowMaxSize(Size.infinite);
+  }
   runApp(const MyApp());
 }
 
