@@ -103,6 +103,6 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: ${{ env.PROJECT_ID }}
           track: alpha
-          status: completed
+          status: draft
           releaseName: ${{ env.BUILD_NAME }}
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
