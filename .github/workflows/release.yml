@@ -16,7 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Set the build number from current date
     steps:
-      - run: echo BUILD_NUMBER=$( date +"%Y%m%d%H" ) >> $GITHUB_ENV
+      - run: echo BUILD_NUMBER=$( date +"%Y%m%d%H" ) >> $GITHUB_OUTPUT
+        id: step1
+    outputs:
+      build-number: ${{ steps.step1.outputs.BUILD_NUMBER }}
 
   build-flutter-linux-x86:
     needs: set-the-build-number
@@ -39,7 +42,7 @@ jobs:
         run: |
           flutter config --enable-linux-desktop
           flutter pub get
-          flutter build linux --release --target-platform linux-x64 --build-name ${{ env.BUILD_NAME }} --build-number ${{ env.BUILD_NUMBER }}
+          flutter build linux --release --target-platform linux-x64 --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
 
       - name: Compress Flutter build
         run: |
@@ -93,7 +96,7 @@ jobs:
       - name: Build Flutter Android app bundle
         run: |
           flutter pub get
-          flutter build appbundle --release --build-name ${{ env.BUILD_NAME }} --build-number ${{ env.BUILD_NUMBER }}
+          flutter build appbundle --release --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
 
       - uses: r0adkll/upload-google-play@v1
         with:
