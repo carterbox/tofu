@@ -338,20 +338,18 @@ class _PriceClockExplainerButtonState extends State<PriceClockExplainerButton> {
             return;
           }
           _showingBottomSheet = true;
-          showBottomSheet(
-            context: context,
-            constraints: const BoxConstraints(
-              maxWidth: double.infinity,
-            ),
-            builder: (context) {
-              return Padding(
-                  padding: const EdgeInsets.only(top: 50),
+          Scaffold.of(context).showBottomSheet<void>(
+            (BuildContext context) {
+              return Container(
+                color: Colors.amber,
+                height: 166,
+                child: Center(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: const [
                       Padding(
-                        padding: EdgeInsets.only(left: 20, right: 20),
+                        padding: EdgeInsets.only(left: 20, right: 20, top: 50),
                         child: Text(
                           'When should you run your appliances?',
                           textAlign: TextAlign.left,
@@ -366,7 +364,9 @@ class _PriceClockExplainerButtonState extends State<PriceClockExplainerButton> {
                             textScaleFactor: 1.0,
                           ))
                     ],
-                  ));
+                  ),
+                ),
+              );
             },
           );
         });
