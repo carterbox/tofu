@@ -10,7 +10,6 @@ on:
 env:
   PROJECT_ID: io.github.carterbox.tofu
   BUILD_NAME: ${{ github.ref_name }}
-  BUILD_NUMBER: $( date +"%Y%m%d%H" )
 
 jobs:
   build-flutter-linux-x86:
@@ -33,7 +32,7 @@ jobs:
         run: |
           flutter config --enable-linux-desktop
           flutter pub get
-          flutter build linux --release --target-platform linux-x64 --build-name ${BUILD_NAME} --build-number ${BUILD_NUMBER}
+          flutter build linux --release --target-platform linux-x64 --build-name ${BUILD_NAME} --build-number $( date +"%Y%m%d%H" )
 
       - name: Compress Flutter build
         run: |
@@ -86,7 +85,7 @@ jobs:
       - name: Build Flutter Android app bundle
         run: |
           flutter pub get
-          flutter build appbundle --release --build-name ${BUILD_NAME} --build-number ${BUILD_NUMBER}
+          flutter build appbundle --release --build-name ${BUILD_NAME} --build-number $( date +"%Y%m%d%H" )
 
       - uses: r0adkll/upload-google-play@v1
         with:
