@@ -10,7 +10,7 @@ on:
 env:
   PROJECT_ID: io.github.carterbox.tofu
   BUILD_NAME: ${{ github.ref_name }}
-  BUILD_NUMBER: '$( date +"%Y%m%d%H" )'
+  BUILD_NUMBER: $( date +"%Y%m%d%H" )
 
 jobs:
   build-flutter-linux-x86:
