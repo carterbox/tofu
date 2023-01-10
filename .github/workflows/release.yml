@@ -98,7 +98,7 @@ jobs:
           flutter pub get
           flutter build appbundle --release --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
 
-      - uses: r0adkll/upload-google-play@v1
+      - uses: r0adkll/upload-google-play@v1.0.19
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: ${{ env.PROJECT_ID }}
