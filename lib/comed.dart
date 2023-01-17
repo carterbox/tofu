@@ -138,12 +138,35 @@ Future<CentPerEnergyRates> fetchRatesNextDay() async {
       .toExactly24Hours();
 }
 
-Stream<CentPerEnergyRates> streamRatesNextDay() async* {
+class EnergyRatesUpdate {
+  final EnergyRates forecast;
+  final double currentHour;
+
+  const EnergyRatesUpdate({
+    required this.forecast,
+    required this.currentHour,
+  });
+}
+
+Stream<EnergyRatesUpdate> streamRatesNextDay() async* {
   final randomInt = Random();
+  DateTime lastUpdate = DateTime(0);
+  EnergyRates? forecast;
   while (true) {
     try {
-      yield await fetchRatesNextDay();
-      _logger.info('Prices from ComEd updated.');
+      if (DateTime.now().hour != lastUpdate.hour ||
+          DateTime.now().difference(lastUpdate) >= const Duration(hours: 1)) {
+        forecast = await fetchRatesNextDay();
+        _logger.info('Prices forecast from ComEd updated.');
+      }
+      if (forecast != null) {
+        yield EnergyRatesUpdate(
+          forecast: forecast,
+          currentHour: await fetchCurrentHourAverage(),
+        );
+        lastUpdate = DateTime.now();
+      }
+      _logger.info('Prices hourly from ComEd updated.');
     } on http.ClientException catch (error) {
       // Ignore errors and just wait another 5 minutes to try again
       _logger.warning(error);
@@ -285,6 +308,7 @@ class CentPerEnergyRates extends EnergyRates {
 /// 24 hour period
 class PriceClock extends StatelessWidget {
   final EnergyRates energyRates;
+  final double currentHourRate;
   late final double innerRadius;
   late final double outerRadius;
 
@@ -292,6 +316,7 @@ class PriceClock extends StatelessWidget {
     super.key,
     required this.energyRates,
     required radius,
+    this.currentHourRate = double.nan,
   }) {
     innerRadius = radius * 0.25;
     outerRadius = radius * 0.75;
@@ -304,7 +329,10 @@ class PriceClock extends StatelessWidget {
     var sections = List<chart.PieChartSectionData>.empty(growable: true);
     final isImportant = energyRates.getHighlights();
     for (int hour = 0; hour < energyRates.rates.length; hour++) {
-      final double price = energyRates.rates[hour];
+      final bool isCurrentHour = (hour == (DateTime.now().hour + 1) % 24);
+      final double price = (isCurrentHour && currentHourRate.isFinite)
+          ? currentHourRate
+          : energyRates.rates[hour];
       double barHeight = price;
       if (price < 0.0) {
         // Large negative bars look really bad.
@@ -314,7 +342,6 @@ class PriceClock extends StatelessWidget {
         // Chart cannot render a zero height bar.
         barHeight = 0.001;
       }
-      final bool isCurrentHour = (hour == (DateTime.now().hour + 1) % 24);
       sections.add(chart.PieChartSectionData(
         value: 1,
         showTitle: price.isFinite && (isCurrentHour || isImportant[hour]),

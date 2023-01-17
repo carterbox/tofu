@@ -76,7 +76,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late Stream<EnergyRates> streamOfEnergyRates;
+  late Stream<EnergyRatesUpdate> streamOfEnergyRates;
   late Stream<DayInfo> streamOfDayInfo;
   int _selectedDestination = 0;
 
@@ -157,12 +157,13 @@ class _MyHomePageState extends State<MyHomePage> {
                           .harmonizeWith(Theme.of(context).colorScheme.primary),
                     );
                   }),
-              StreamBuilder<EnergyRates>(
+              StreamBuilder<EnergyRatesUpdate>(
                   stream: streamOfEnergyRates,
                   builder: (context, snapshot) {
                     if (snapshot.hasData) {
                       return PriceClock(
-                        energyRates: snapshot.data!,
+                        energyRates: snapshot.data!.forecast,
+                        currentHourRate: snapshot.data!.currentHour,
                         radius: viewRadius,
                       );
                     }
