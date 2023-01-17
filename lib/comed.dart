@@ -174,6 +174,25 @@ abstract class EnergyRates {
     required this.dates,
     required this.rates,
   });
+
+  /// Provides hours location of min, max, and median rates
+  List<bool> getHighlights() {
+    final finiteRates = rates.where((x) => x.isFinite);
+    var highlights = List<bool>.filled(rates.length, false, growable: false);
+
+    final double priceMax = finiteRates.reduce(max);
+    highlights[rates.indexOf(priceMax)] = true;
+
+    final double priceMin = finiteRates.reduce(min);
+    highlights[rates.indexOf(priceMin)] = true;
+
+    var ratesSorted = finiteRates.toList().sublist(0, finiteRates.length);
+    ratesSorted.sort();
+    final priceMedian = ratesSorted[finiteRates.length ~/ 2];
+    highlights[rates.indexOf(priceMedian)] = true;
+
+    return highlights;
+  }
 }
 
 /// A collection of US dollar cents per kWh across multiple periods.
@@ -283,6 +302,7 @@ class PriceClock extends StatelessWidget {
     final theme = Theme.of(context);
     final double barHeightMaximum = (energyRates.rateHighThreshold * 1.1);
     var sections = List<chart.PieChartSectionData>.empty(growable: true);
+    final isImportant = energyRates.getHighlights();
     for (int hour = 0; hour < energyRates.rates.length; hour++) {
       final double price = energyRates.rates[hour];
       double barHeight = price;
@@ -294,13 +314,14 @@ class PriceClock extends StatelessWidget {
         // Chart cannot render a zero height bar.
         barHeight = 0.001;
       }
+      final bool isCurrentHour = (hour == (DateTime.now().hour + 1) % 24);
       sections.add(chart.PieChartSectionData(
         value: 1,
-        showTitle: price.isFinite,
+        showTitle: price.isFinite && (isCurrentHour || isImportant[hour]),
         title: '${price.toStringAsFixed(1)}${energyRates.units}',
         radius: outerRadius * barHeight / barHeightMaximum,
-        titlePositionPercentageOffset: 0.66 * barHeightMaximum / barHeight,
-        color: hour == (DateTime.now().hour + 1) % 24
+        titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
+        color: isCurrentHour
             ? theme.colorScheme.inversePrimary
             : theme.colorScheme.primary,
       ));
