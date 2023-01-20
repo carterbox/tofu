@@ -266,52 +266,56 @@ class CentPerEnergyRates extends EnergyRates {
 /// 24 hour period
 class PriceClock extends StatelessWidget {
   final EnergyRates energyRates;
-  late final double innerRadius;
-  late final double outerRadius;
+  final double radius;
 
-  PriceClock({
+  const PriceClock({
     super.key,
     required this.energyRates,
-    required radius,
-  }) {
-    innerRadius = radius * 0.25;
-    outerRadius = radius * 0.75;
-  }
+    this.radius = 1.0,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final double barHeightMaximum = (energyRates.rateHighThreshold * 1.1);
-    var sections = List<chart.PieChartSectionData>.empty(growable: true);
-    for (int hour = 0; hour < energyRates.rates.length; hour++) {
-      final double price = energyRates.rates[hour];
-      double barHeight = price;
-      if (price < 0.0) {
-        // Large negative bars look really bad.
-        barHeight = -1.0;
+    return LayoutBuilder(builder: (context, constraints) {
+      final double diameter =
+          0.5 * min(constraints.maxHeight, constraints.maxWidth);
+
+      final innerRadius = diameter * radius * 0.25;
+      final outerRadius = diameter * radius * 0.75;
+
+      final theme = Theme.of(context);
+      final double barHeightMaximum = (energyRates.rateHighThreshold * 1.1);
+      var sections = List<chart.PieChartSectionData>.empty(growable: true);
+      for (int hour = 0; hour < energyRates.rates.length; hour++) {
+        final double price = energyRates.rates[hour];
+        double barHeight = price;
+        if (price < 0.0) {
+          // Large negative bars look really bad.
+          barHeight = -1.0;
+        }
+        if (price == 0.0 || !price.isFinite) {
+          // Chart cannot render a zero height bar.
+          barHeight = 0.001;
+        }
+        sections.add(chart.PieChartSectionData(
+          value: 1,
+          showTitle: price.isFinite,
+          title: '${price.toStringAsFixed(1)}${energyRates.units}',
+          radius: outerRadius * barHeight / barHeightMaximum,
+          titlePositionPercentageOffset: 0.66 * barHeightMaximum / barHeight,
+          color: hour == (DateTime.now().hour + 1) % 24
+              ? theme.colorScheme.inversePrimary
+              : theme.colorScheme.primary,
+        ));
       }
-      if (price == 0.0 || !price.isFinite) {
-        // Chart cannot render a zero height bar.
-        barHeight = 0.001;
-      }
-      sections.add(chart.PieChartSectionData(
-        value: 1,
-        showTitle: price.isFinite,
-        title: '${price.toStringAsFixed(1)}${energyRates.units}',
-        radius: outerRadius * barHeight / barHeightMaximum,
-        titlePositionPercentageOffset: 0.66 * barHeightMaximum / barHeight,
-        color: hour == (DateTime.now().hour + 1) % 24
-            ? theme.colorScheme.inversePrimary
-            : theme.colorScheme.primary,
-      ));
-    }
-    return chart.PieChart(
-      chart.PieChartData(
-        sections: sections,
-        centerSpaceRadius: innerRadius,
-        startDegreeOffset: (360 / 24) * 5,
-      ),
-    );
+      return chart.PieChart(
+        chart.PieChartData(
+          sections: sections,
+          centerSpaceRadius: innerRadius,
+          startDegreeOffset: (360 / 24) * 5,
+        ),
+      );
+    });
   }
 }
 
@@ -370,5 +374,23 @@ class _PriceClockExplainerButtonState extends State<PriceClockExplainerButton> {
             },
           );
         });
+  }
+}
+
+class PriceClockLoading extends StatelessWidget {
+  const PriceClockLoading({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final diameter = min(constraints.maxHeight, constraints.maxWidth);
+      return SizedBox(
+        width: 0.25 * diameter,
+        height: 0.25 * diameter,
+        child: CircularProgressIndicator(
+          strokeWidth: 0.01 * diameter,
+        ),
+      );
+    });
   }
 }
