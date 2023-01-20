@@ -138,12 +138,35 @@ Future<CentPerEnergyRates> fetchRatesNextDay() async {
       .toExactly24Hours();
 }
 
-Stream<CentPerEnergyRates> streamRatesNextDay() async* {
+class EnergyRatesUpdate {
+  final EnergyRates forecast;
+  final double currentHour;
+
+  const EnergyRatesUpdate({
+    required this.forecast,
+    required this.currentHour,
+  });
+}
+
+Stream<EnergyRatesUpdate> streamRatesNextDay() async* {
   final randomInt = Random();
+  DateTime lastUpdate = DateTime(0);
+  EnergyRates? forecast;
   while (true) {
     try {
-      yield await fetchRatesNextDay();
-      _logger.info('Prices from ComEd updated.');
+      if (DateTime.now().hour != lastUpdate.hour ||
+          DateTime.now().difference(lastUpdate) >= const Duration(hours: 1)) {
+        forecast = await fetchRatesNextDay();
+        _logger.info('Prices forecast from ComEd updated.');
+      }
+      if (forecast != null) {
+        yield EnergyRatesUpdate(
+          forecast: forecast,
+          currentHour: await fetchCurrentHourAverage(),
+        );
+        lastUpdate = DateTime.now();
+      }
+      _logger.info('Prices hourly from ComEd updated.');
     } on http.ClientException catch (error) {
       // Ignore errors and just wait another 5 minutes to try again
       _logger.warning(error);
@@ -174,6 +197,25 @@ abstract class EnergyRates {
     required this.dates,
     required this.rates,
   });
+
+  /// Provides hours location of min, max, and median rates
+  List<bool> getHighlights() {
+    final finiteRates = rates.where((x) => x.isFinite);
+    var highlights = List<bool>.filled(rates.length, false, growable: false);
+
+    final double priceMax = finiteRates.reduce(max);
+    highlights[rates.indexOf(priceMax)] = true;
+
+    final double priceMin = finiteRates.reduce(min);
+    highlights[rates.indexOf(priceMin)] = true;
+
+    var ratesSorted = finiteRates.toList().sublist(0, finiteRates.length);
+    ratesSorted.sort();
+    final priceMedian = ratesSorted[finiteRates.length ~/ 2];
+    highlights[rates.indexOf(priceMedian)] = true;
+
+    return highlights;
+  }
 }
 
 /// A collection of US dollar cents per kWh across multiple periods.
@@ -267,11 +309,13 @@ class CentPerEnergyRates extends EnergyRates {
 class PriceClock extends StatelessWidget {
   final EnergyRates energyRates;
   final double radius;
+  final double currentHourRate;
 
   const PriceClock({
     super.key,
     required this.energyRates,
     this.radius = 1.0,
+    this.currentHourRate = double.nan,
   });
 
   @override
@@ -286,8 +330,13 @@ class PriceClock extends StatelessWidget {
       final theme = Theme.of(context);
       final double barHeightMaximum = (energyRates.rateHighThreshold * 1.1);
       var sections = List<chart.PieChartSectionData>.empty(growable: true);
+      final isImportant = energyRates.getHighlights();
       for (int hour = 0; hour < energyRates.rates.length; hour++) {
-        final double price = energyRates.rates[hour];
+        final bool isCurrentHour = (hour == (DateTime.now().hour + 1) % 24);
+        final double price = (isCurrentHour && currentHourRate.isFinite)
+            ? currentHourRate
+            : energyRates.rates[hour];
+
         double barHeight = price;
         if (price < 0.0) {
           // Large negative bars look really bad.
@@ -299,11 +348,11 @@ class PriceClock extends StatelessWidget {
         }
         sections.add(chart.PieChartSectionData(
           value: 1,
-          showTitle: price.isFinite,
+          showTitle: price.isFinite && (isCurrentHour || isImportant[hour]),
           title: '${price.toStringAsFixed(1)}${energyRates.units}',
           radius: outerRadius * barHeight / barHeightMaximum,
-          titlePositionPercentageOffset: 0.66 * barHeightMaximum / barHeight,
-          color: hour == (DateTime.now().hour + 1) % 24
+          titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
+          color: isCurrentHour
               ? theme.colorScheme.inversePrimary
               : theme.colorScheme.primary,
         ));

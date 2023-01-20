@@ -177,7 +177,7 @@ class StreamingSolarCircle extends ConsumerWidget {
   }
 }
 
-final streamOfEnergyRates = StreamProvider<EnergyRates>((ref) async* {
+final streamOfEnergyRates = StreamProvider<EnergyRatesUpdate>((ref) async* {
   await for (final rate in streamRatesNextDay()) {
     yield rate;
   }
@@ -191,7 +191,10 @@ class StreamingPriceClock extends ConsumerWidget {
     return ref.watch(streamOfEnergyRates).when(
           error: (error, stackTrace) => const PriceClockLoading(),
           loading: () => const PriceClockLoading(),
-          data: (data) => PriceClock(energyRates: data),
+          data: (data) => PriceClock(
+            energyRates: data.forecast,
+            currentHourRate: data.currentHour,
+          ),
         );
   }
 }
