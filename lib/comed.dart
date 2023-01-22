@@ -368,6 +368,41 @@ class PriceClock extends StatelessWidget {
   }
 }
 
+class PriceClockExplainer extends StatelessWidget {
+  const PriceClockExplainer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Theme.of(context).dialogBackgroundColor,
+      alignment: const Alignment(0, 0),
+      padding: const EdgeInsets.all(20),
+        child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.max,
+        children: const [
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Text(
+              'When should you run your appliances?',
+              textAlign: TextAlign.left,
+              textScaleFactor: 2,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'This chart shows the current and forecasted hourly average rates for as much of the next 24 hours as possible. Run your appliances when electricity rates are low.',
+              textAlign: TextAlign.right,
+              textScaleFactor: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// A button which toggles a bottom drawer with text explaining the Price Clock
 class PriceClockExplainerButton extends StatefulWidget {
   const PriceClockExplainerButton({super.key});
@@ -393,33 +428,7 @@ class _PriceClockExplainerButtonState extends State<PriceClockExplainerButton> {
           _showingBottomSheet = true;
           Scaffold.of(context).showBottomSheet<void>(
             (BuildContext context) {
-              return Container(
-                color: Colors.amber,
-                height: 166,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Padding(
-                        padding: EdgeInsets.only(left: 20, right: 20, top: 50),
-                        child: Text(
-                          'When should you run your appliances?',
-                          textAlign: TextAlign.left,
-                          textScaleFactor: 1.5,
-                        ),
-                      ),
-                      Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Text(
-                            'This chart shows the current and forecasted hourly average rates for as much of the next 24 hours as possible. Run your appliances when electricity rates are low.',
-                            textAlign: TextAlign.left,
-                            textScaleFactor: 1.0,
-                          ))
-                    ],
-                  ),
-                ),
-              );
+              return const PriceClockExplainer();
             },
           );
         });

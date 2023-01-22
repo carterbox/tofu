@@ -20,6 +20,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
+import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:tofu/comed.dart';
 import 'package:tofu/solar.dart';
 import 'package:tofu/theme.dart';
@@ -121,18 +122,28 @@ class _MyHomePageState extends State<MyHomePage> {
         child: LayoutBuilder(builder: (context, constraints) {
           return Row(
             children: [
-              if (constraints.maxWidth > 600)
-                const Expanded(
+              if (constraints.maxWidth > 800)
+                Expanded(
                   flex: 13,
-                  child: Placeholder(),
+                  child: PriceClockExplainer(),
                 ),
               Expanded(
                 flex: 21,
                 child: Stack(
                   alignment: Alignment.center,
-                  children: const [
+                  children: [
                     StreamingSolarCircle(),
                     StreamingPriceClock(),
+                    if (constraints.maxWidth <= 800)
+                      SlidingUpPanel(
+                        panel: PriceClockExplainer(),
+                        // minHeight: 20,
+                        header: Icon(
+                          Icons.expand_less,
+                        ),
+                        maxHeight: 250,
+                        minHeight: 50,
+                      ),
                   ],
                 ),
               ),
