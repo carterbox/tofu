@@ -20,7 +20,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:tofu/comed.dart';
 import 'package:tofu/solar.dart';
 import 'package:tofu/theme.dart';
@@ -33,7 +32,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     setWindowMinSize(const Size(500, 500));
-    setWindowMaxSize(Size.infinite);
+    setWindowMaxSize(const Size(1000, 800));
   }
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -80,78 +79,69 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          children: <Widget>[
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Navigation Menu',
+    return LayoutBuilder(builder: (context, constraints) {
+      final layoutIsWide = constraints.maxWidth > 600;
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title),
+        ),
+        floatingActionButton:
+            layoutIsWide ? null : const PriceClockExplainerButton(),
+        drawer: Drawer(
+          child: ListView(
+            children: <Widget>[
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Navigation Menu',
+                ),
               ),
-            ),
-            const Divider(
-              height: 1,
-              thickness: 1,
-            ),
-            ListTile(
-              leading: const Icon(Icons.price_change),
-              title: const Text('Hourly Energy Rates'),
-              selected: _selectedDestination == 0,
-              onTap: () {
-                selectDestination(0);
-                Navigator.of(context).pop();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.copyright),
-              title: const Text('Open Source Licenses'),
-              selected: _selectedDestination == 1,
-              onTap: () {
-                Navigator.of(context).pop();
-                showLicensePage(context: context);
-              },
+              const Divider(
+                height: 1,
+                thickness: 1,
+              ),
+              ListTile(
+                leading: const Icon(Icons.price_change),
+                title: const Text('Hourly Energy Rates'),
+                selected: _selectedDestination == 0,
+                onTap: () {
+                  selectDestination(0);
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.copyright),
+                title: const Text('Open Source Licenses'),
+                selected: _selectedDestination == 1,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  showLicensePage(context: context);
+                },
+              ),
+            ],
+          ),
+        ),
+        body: Row(
+          children: [
+            if (layoutIsWide)
+              const Expanded(
+                flex: 13,
+                child: PriceClockExplainer(),
+              ),
+            Expanded(
+              flex: 21,
+              child: Stack(
+                alignment: Alignment.center,
+                children: const [
+                  StreamingSolarCircle(),
+                  StreamingPriceClock(),
+                ],
+              ),
             ),
           ],
         ),
-      ),
-      body: Center(
-        child: LayoutBuilder(builder: (context, constraints) {
-          return Row(
-            children: [
-              if (constraints.maxWidth > 800)
-                Expanded(
-                  flex: 13,
-                  child: PriceClockExplainer(),
-                ),
-              Expanded(
-                flex: 21,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    StreamingSolarCircle(),
-                    StreamingPriceClock(),
-                    if (constraints.maxWidth <= 800)
-                      SlidingUpPanel(
-                        panel: PriceClockExplainer(),
-                        // minHeight: 20,
-                        header: Icon(
-                          Icons.expand_less,
-                        ),
-                        maxHeight: 250,
-                        minHeight: 50,
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        }),
-      ),
-    );
+      );
+    });
   }
 
   void selectDestination(int index) {

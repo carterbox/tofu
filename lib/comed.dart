@@ -375,14 +375,13 @@ class PriceClockExplainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Theme.of(context).dialogBackgroundColor,
-      alignment: const Alignment(0, 0),
       padding: const EdgeInsets.all(20),
-        child: Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.max,
+        mainAxisSize: MainAxisSize.min,
         children: const [
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
+            padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
               'When should you run your appliances?',
               textAlign: TextAlign.left,
@@ -393,7 +392,7 @@ class PriceClockExplainer extends StatelessWidget {
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
               'This chart shows the current and forecasted hourly average rates for as much of the next 24 hours as possible. Run your appliances when electricity rates are low.',
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.left,
               textScaleFactor: 1,
             ),
           ),
@@ -403,35 +402,23 @@ class PriceClockExplainer extends StatelessWidget {
   }
 }
 
-/// A button which toggles a bottom drawer with text explaining the Price Clock
-class PriceClockExplainerButton extends StatefulWidget {
+/// A button which toggles a model bottom sheet containing PriceClockExplainer
+class PriceClockExplainerButton extends StatelessWidget {
   const PriceClockExplainerButton({super.key});
-
-  @override
-  State<PriceClockExplainerButton> createState() =>
-      _PriceClockExplainerButtonState();
-}
-
-class _PriceClockExplainerButtonState extends State<PriceClockExplainerButton> {
-  bool _showingBottomSheet = false;
 
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
-        child: const Icon(Icons.question_mark),
-        onPressed: () {
-          if (_showingBottomSheet) {
-            _showingBottomSheet = false;
-            Navigator.pop(context);
-            return;
-          }
-          _showingBottomSheet = true;
-          Scaffold.of(context).showBottomSheet<void>(
-            (BuildContext context) {
-              return const PriceClockExplainer();
-            },
-          );
-        });
+      child: const Icon(Icons.question_mark),
+      onPressed: () {
+        showModalBottomSheet<void>(
+          context: context,
+          builder: (BuildContext context) {
+            return const PriceClockExplainer();
+          },
+        );
+      },
+    );
   }
 }
 
