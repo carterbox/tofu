@@ -138,12 +138,35 @@ Future<CentPerEnergyRates> fetchRatesNextDay() async {
       .toExactly24Hours();
 }
 
-Stream<CentPerEnergyRates> streamRatesNextDay() async* {
+class EnergyRatesUpdate {
+  final EnergyRates forecast;
+  final double currentHour;
+
+  const EnergyRatesUpdate({
+    required this.forecast,
+    required this.currentHour,
+  });
+}
+
+Stream<EnergyRatesUpdate> streamRatesNextDay() async* {
   final randomInt = Random();
+  DateTime lastUpdate = DateTime(0);
+  EnergyRates? forecast;
   while (true) {
     try {
-      yield await fetchRatesNextDay();
-      _logger.info('Prices from ComEd updated.');
+      if (DateTime.now().hour != lastUpdate.hour ||
+          DateTime.now().difference(lastUpdate) >= const Duration(hours: 1)) {
+        forecast = await fetchRatesNextDay();
+        _logger.info('Prices forecast from ComEd updated.');
+      }
+      if (forecast != null) {
+        yield EnergyRatesUpdate(
+          forecast: forecast,
+          currentHour: await fetchCurrentHourAverage(),
+        );
+        lastUpdate = DateTime.now();
+      }
+      _logger.info('Prices hourly from ComEd updated.');
     } on http.ClientException catch (error) {
       // Ignore errors and just wait another 5 minutes to try again
       _logger.warning(error);
@@ -174,6 +197,25 @@ abstract class EnergyRates {
     required this.dates,
     required this.rates,
   });
+
+  /// Provides hours location of min, max, and median rates
+  List<bool> getHighlights() {
+    final finiteRates = rates.where((x) => x.isFinite);
+    var highlights = List<bool>.filled(rates.length, false, growable: false);
+
+    final double priceMax = finiteRates.reduce(max);
+    highlights[rates.indexOf(priceMax)] = true;
+
+    final double priceMin = finiteRates.reduce(min);
+    highlights[rates.indexOf(priceMin)] = true;
+
+    var ratesSorted = finiteRates.toList().sublist(0, finiteRates.length);
+    ratesSorted.sort();
+    final priceMedian = ratesSorted[finiteRates.length ~/ 2];
+    highlights[rates.indexOf(priceMedian)] = true;
+
+    return highlights;
+  }
 }
 
 /// A collection of US dollar cents per kWh across multiple periods.
@@ -266,109 +308,134 @@ class CentPerEnergyRates extends EnergyRates {
 /// 24 hour period
 class PriceClock extends StatelessWidget {
   final EnergyRates energyRates;
-  late final double innerRadius;
-  late final double outerRadius;
+  final double radius;
+  final double currentHourRate;
 
-  PriceClock({
+  const PriceClock({
     super.key,
     required this.energyRates,
-    required radius,
-  }) {
-    innerRadius = radius * 0.25;
-    outerRadius = radius * 0.75;
-  }
+    this.radius = 1.0,
+    this.currentHourRate = double.nan,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final double barHeightMaximum = (energyRates.rateHighThreshold * 1.1);
-    var sections = List<chart.PieChartSectionData>.empty(growable: true);
-    for (int hour = 0; hour < energyRates.rates.length; hour++) {
-      final double price = energyRates.rates[hour];
-      double barHeight = price;
-      if (price < 0.0) {
-        // Large negative bars look really bad.
-        barHeight = -1.0;
+    return LayoutBuilder(builder: (context, constraints) {
+      final double diameter =
+          0.5 * min(constraints.maxHeight, constraints.maxWidth);
+
+      final innerRadius = diameter * radius * 0.25;
+      final outerRadius = diameter * radius * 0.75;
+
+      final theme = Theme.of(context);
+      final double barHeightMaximum = (energyRates.rateHighThreshold * 1.1);
+      var sections = List<chart.PieChartSectionData>.empty(growable: true);
+      final isImportant = energyRates.getHighlights();
+      for (int hour = 0; hour < energyRates.rates.length; hour++) {
+        final bool isCurrentHour = (hour == (DateTime.now().hour + 1) % 24);
+        final double price = (isCurrentHour && currentHourRate.isFinite)
+            ? currentHourRate
+            : energyRates.rates[hour];
+
+        double barHeight = price;
+        if (price < 0.0) {
+          // Large negative bars look really bad.
+          barHeight = -1.0;
+        }
+        if (price == 0.0 || !price.isFinite) {
+          // Chart cannot render a zero height bar.
+          barHeight = 0.001;
+        }
+        sections.add(chart.PieChartSectionData(
+          value: 1,
+          showTitle: price.isFinite && (isCurrentHour || isImportant[hour]),
+          title: '${price.toStringAsFixed(1)}${energyRates.units}',
+          radius: outerRadius * barHeight / barHeightMaximum,
+          titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
+          color: isCurrentHour
+              ? theme.colorScheme.inversePrimary
+              : theme.colorScheme.primary,
+        ));
       }
-      if (price == 0.0 || !price.isFinite) {
-        // Chart cannot render a zero height bar.
-        barHeight = 0.001;
-      }
-      sections.add(chart.PieChartSectionData(
-        value: 1,
-        showTitle: price.isFinite,
-        title: '${price.toStringAsFixed(1)}${energyRates.units}',
-        radius: outerRadius * barHeight / barHeightMaximum,
-        titlePositionPercentageOffset: 0.66 * barHeightMaximum / barHeight,
-        color: hour == (DateTime.now().hour + 1) % 24
-            ? theme.colorScheme.inversePrimary
-            : theme.colorScheme.primary,
-      ));
-    }
-    return chart.PieChart(
-      chart.PieChartData(
-        sections: sections,
-        centerSpaceRadius: innerRadius,
-        startDegreeOffset: (360 / 24) * 5,
+      return chart.PieChart(
+        chart.PieChartData(
+          sections: sections,
+          centerSpaceRadius: innerRadius,
+          startDegreeOffset: (360 / 24) * 5,
+        ),
+      );
+    });
+  }
+}
+
+class PriceClockExplainer extends StatelessWidget {
+  const PriceClockExplainer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Theme.of(context).dialogBackgroundColor,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'When should you run your appliances?',
+              textAlign: TextAlign.left,
+              textScaleFactor: 2,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'This chart shows the current and forecasted hourly average rates for as much of the next 24 hours as possible. Run your appliances when electricity rates are low.',
+              textAlign: TextAlign.left,
+              textScaleFactor: 1,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// A button which toggles a bottom drawer with text explaining the Price Clock
-class PriceClockExplainerButton extends StatefulWidget {
+/// A button which toggles a model bottom sheet containing PriceClockExplainer
+class PriceClockExplainerButton extends StatelessWidget {
   const PriceClockExplainerButton({super.key});
-
-  @override
-  State<PriceClockExplainerButton> createState() =>
-      _PriceClockExplainerButtonState();
-}
-
-class _PriceClockExplainerButtonState extends State<PriceClockExplainerButton> {
-  bool _showingBottomSheet = false;
 
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
-        child: const Icon(Icons.question_mark),
-        onPressed: () {
-          if (_showingBottomSheet) {
-            _showingBottomSheet = false;
-            Navigator.pop(context);
-            return;
-          }
-          _showingBottomSheet = true;
-          showBottomSheet(
-            context: context,
-            constraints: const BoxConstraints(
-              maxWidth: double.infinity,
-            ),
-            builder: (context) {
-              return Padding(
-                  padding: const EdgeInsets.only(top: 50),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Padding(
-                        padding: EdgeInsets.only(left: 20, right: 20),
-                        child: Text(
-                          'When should you run your appliances?',
-                          textAlign: TextAlign.left,
-                          textScaleFactor: 1.5,
-                        ),
-                      ),
-                      Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Text(
-                            'This chart shows the current and forecasted hourly average rates for as much of the next 24 hours as possible. Run your appliances when electricity rates are low.',
-                            textAlign: TextAlign.left,
-                            textScaleFactor: 1.0,
-                          ))
-                    ],
-                  ));
-            },
-          );
-        });
+      child: const Icon(Icons.question_mark),
+      onPressed: () {
+        showModalBottomSheet<void>(
+          context: context,
+          builder: (BuildContext context) {
+            return const PriceClockExplainer();
+          },
+        );
+      },
+    );
+  }
+}
+
+class PriceClockLoading extends StatelessWidget {
+  const PriceClockLoading({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final diameter = min(constraints.maxHeight, constraints.maxWidth);
+      return SizedBox(
+        width: 0.25 * diameter,
+        height: 0.25 * diameter,
+        child: CircularProgressIndicator(
+          strokeWidth: 0.01 * diameter,
+        ),
+      );
+    });
   }
 }

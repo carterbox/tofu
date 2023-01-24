@@ -19,6 +19,7 @@
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
 import 'package:sunrise_sunset_calc/sunrise_sunset_calc.dart';
+import 'dart:math';
 
 /// Represents the time of [sunrise] and [length] of the day in hours
 class DayInfo {
@@ -63,8 +64,8 @@ class SolarCircle extends StatelessWidget {
   final Color nightColor;
 
   const SolarCircle({
-    required this.radius,
-    required this.today,
+    this.radius = 1.0,
+    this.today = const DayInfo(sunrise: 6, length: 12),
     this.dayColor = Colors.amber,
     this.nightColor = Colors.indigo,
     super.key,
@@ -72,47 +73,58 @@ class SolarCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final diameter = 2 * radius;
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        chart.PieChart(chart.PieChartData(
-          sections: [
-            chart.PieChartSectionData(
-              value: today.length,
-              color: dayColor,
-              showTitle: false,
-              radius: radius,
-            ),
-            chart.PieChartSectionData(
-              value: 24 - today.length,
-              color: nightColor,
-              showTitle: false,
-              radius: radius,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double diameter =
+            radius * min(constraints.maxHeight, constraints.maxWidth);
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            chart.PieChart(chart.PieChartData(
+              sections: [
+                chart.PieChartSectionData(
+                  value: today.length,
+                  color: dayColor,
+                  showTitle: false,
+                  radius: diameter / 2,
+                ),
+                chart.PieChartSectionData(
+                  value: 24 - today.length,
+                  color: nightColor,
+                  showTitle: false,
+                  radius: diameter / 2,
+                ),
+              ],
+              centerSpaceRadius: 0,
+              startDegreeOffset: 15 * (6 + today.sunrise),
+            )),
+            SizedBox(
+                width: diameter,
+                height: diameter,
+                child: Align(
+                    alignment: const Alignment(0.0, 0.5),
+                    child: Icon(
+                      Icons.dark_mode_outlined,
+                      color: dayColor,
+                      size: diameter / 5,
+                    ))),
+            SizedBox(
+              width: diameter,
+              height: diameter,
+              child: Align(
+                  alignment: const Alignment(0.0, -0.5),
+                  child: Icon(
+                    Icons.light_mode,
+                    color: nightColor,
+                    size: diameter / 5,
+                  )),
             ),
           ],
-          centerSpaceRadius: 0,
-          startDegreeOffset: 15 * (6 + today.sunrise),
-        )),
-        SizedBox(
-            width: diameter,
-            height: diameter,
-            child: Align(
-                alignment: const Alignment(0.0, 0.5),
-                child: Icon(
-                  Icons.dark_mode_outlined,
-                  color: dayColor,
-                ))),
-        SizedBox(
-            width: diameter,
-            height: diameter,
-            child: Align(
-                alignment: const Alignment(0.0, -0.5),
-                child: Icon(
-                  Icons.light_mode,
-                  color: nightColor,
-                )))
-      ],
+        );
+      },
     );
   }
 }
+
+
+//

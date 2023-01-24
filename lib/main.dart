@@ -14,12 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
 import 'package:tofu/comed.dart';
 import 'package:tofu/solar.dart';
@@ -33,9 +32,9 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     setWindowMinSize(const Size(500, 500));
-    setWindowMaxSize(Size.infinite);
+    setWindowMaxSize(const Size(1000, 800));
   }
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -76,114 +75,127 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late Stream<EnergyRates> streamOfEnergyRates;
-  late Stream<DayInfo> streamOfDayInfo;
   int _selectedDestination = 0;
 
   @override
-  void initState() {
-    super.initState();
-    streamOfEnergyRates = streamRatesNextDay();
-    streamOfDayInfo = streamSunriseSunset();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          children: <Widget>[
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Navigation Menu',
+    return LayoutBuilder(builder: (context, constraints) {
+      final layoutIsWide = constraints.maxWidth > 600;
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.title),
+        ),
+        floatingActionButton:
+            layoutIsWide ? null : const PriceClockExplainerButton(),
+        drawer: Drawer(
+          child: ListView(
+            children: <Widget>[
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Navigation Menu',
+                ),
               ),
-            ),
-            const Divider(
-              height: 1,
-              thickness: 1,
-            ),
-            ListTile(
-              leading: const Icon(Icons.price_change),
-              title: const Text('Hourly Energy Rates'),
-              selected: _selectedDestination == 0,
-              onTap: () {
-                selectDestination(0);
-                Navigator.of(context).pop();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.copyright),
-              title: const Text('Open Source Licenses'),
-              selected: _selectedDestination == 1,
-              onTap: () {
-                Navigator.of(context).pop();
-                showLicensePage(context: context);
-              },
+              const Divider(
+                height: 1,
+                thickness: 1,
+              ),
+              ListTile(
+                leading: const Icon(Icons.price_change),
+                title: const Text('Hourly Energy Rates'),
+                selected: _selectedDestination == 0,
+                onTap: () {
+                  selectDestination(0);
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.copyright),
+                title: const Text('Open Source Licenses'),
+                selected: _selectedDestination == 1,
+                onTap: () {
+                  Navigator.of(context).pop();
+                  showLicensePage(context: context);
+                },
+              ),
+            ],
+          ),
+        ),
+        body: Row(
+          children: [
+            if (layoutIsWide)
+              const Expanded(
+                flex: 13,
+                child: PriceClockExplainer(),
+              ),
+            Expanded(
+              flex: 21,
+              child: Stack(
+                alignment: Alignment.center,
+                children: const [
+                  StreamingSolarCircle(),
+                  StreamingPriceClock(),
+                ],
+              ),
             ),
           ],
         ),
-      ),
-      floatingActionButton: const PriceClockExplainerButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: Center(
-        child: LayoutBuilder(builder: (context, constraints) {
-          double viewRadius = 0.5 *
-              min(
-                constraints.maxHeight,
-                constraints.maxWidth,
-              );
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              StreamBuilder(
-                  stream: streamOfDayInfo,
-                  builder: (context, snapshot) {
-                    late final DayInfo today;
-                    if (snapshot.hasData) {
-                      today = snapshot.data!;
-                    } else {
-                      today = const DayInfo(length: 12, sunrise: 6);
-                    }
-                    return SolarCircle(
-                      radius: viewRadius / 4,
-                      today: today,
-                      dayColor: Colors.amber
-                          .harmonizeWith(Theme.of(context).colorScheme.primary),
-                      nightColor: Colors.indigo
-                          .harmonizeWith(Theme.of(context).colorScheme.primary),
-                    );
-                  }),
-              StreamBuilder<EnergyRates>(
-                  stream: streamOfEnergyRates,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return PriceClock(
-                        energyRates: snapshot.data!,
-                        radius: viewRadius,
-                      );
-                    }
-                    return SizedBox(
-                      width: viewRadius / 2,
-                      height: viewRadius / 2,
-                      child: CircularProgressIndicator(
-                        strokeWidth: viewRadius / 50,
-                      ),
-                    );
-                  }),
-            ],
-          );
-        }),
-      ),
-    );
+      );
+    });
   }
 
   void selectDestination(int index) {
     setState(() {
       _selectedDestination = index;
     });
+  }
+}
+
+final streamOfDayInfo = StreamProvider<DayInfo>((ref) async* {
+  await for (final day in streamSunriseSunset()) {
+    yield day;
+  }
+});
+
+class StreamingSolarCircle extends ConsumerWidget {
+  const StreamingSolarCircle({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dayInfo = ref.watch(streamOfDayInfo).when(
+          error: (error, stackTrace) => const DayInfo(length: 12, sunrise: 6),
+          loading: () => const DayInfo(length: 12, sunrise: 6),
+          data: (data) => data,
+        );
+    return SolarCircle(
+      radius: 0.255,
+      today: dayInfo,
+      dayColor:
+          Colors.amber.harmonizeWith(Theme.of(context).colorScheme.primary),
+      nightColor:
+          Colors.indigo.harmonizeWith(Theme.of(context).colorScheme.primary),
+    );
+  }
+}
+
+final streamOfEnergyRates = StreamProvider<EnergyRatesUpdate>((ref) async* {
+  await for (final rate in streamRatesNextDay()) {
+    yield rate;
+  }
+});
+
+class StreamingPriceClock extends ConsumerWidget {
+  const StreamingPriceClock({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(streamOfEnergyRates).when(
+          error: (error, stackTrace) => const PriceClockLoading(),
+          loading: () => const PriceClockLoading(),
+          data: (data) => PriceClock(
+            energyRates: data.forecast,
+            currentHourRate: data.currentHour,
+          ),
+        );
   }
 }
