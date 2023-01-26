@@ -32,6 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: jirutka/setup-alpine@v1
+        name: Setup Alpine chroot system
         with:
           arch: ${{ matrix.architecture[0] }}
           branch: latest-stable
@@ -50,10 +51,6 @@ jobs:
             zip
             jq
 
-      - name: Run script inside Alpine chroot with aarch64 emulation
-        run: uname -m
-        shell: alpine.sh {0}
-
       - uses: carterbox/flutter-action@main
         with:
           cache-path: "/home/runner/work/flutter"
@@ -66,8 +63,9 @@ jobs:
       - name: Build Flutter Linux app bundle
         shell: alpine.sh {0}
         run: |
-          rm $FLUTTER_ROOT/bin/cache/*.stamp
+          rm -rf $FLUTTER_ROOT/bin/cache
           export PATH=$PATH:$FLUTTER_ROOT/bin
+          flutter doctor
           flutter config --enable-linux-desktop
           flutter pub get
           flutter build linux --release --target-platform linux-${{ matrix.architecture[1] }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
