@@ -391,7 +391,15 @@ class PriceClockExplainer extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
-              'This chart shows the current and forecasted hourly average rates for as much of the next 24 hours as possible. Run your appliances when electricity rates are low.',
+              'Run your appliances when electricity rates are low.',
+              textAlign: TextAlign.left,
+              textScaleFactor: 1,
+            ),
+          ),
+            Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'This chart shows the current and forecasted hourly average electricity prices for as much of the next 24 hours as possible in the Chicagoland ComEd energy market.',
               textAlign: TextAlign.left,
               textScaleFactor: 1,
             ),
