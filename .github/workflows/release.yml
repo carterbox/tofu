@@ -56,7 +56,7 @@ jobs:
 
       - uses: carterbox/flutter-action@main
         with:
-          cache-path: "/home/runner/work"
+          cache-path: "/home/runner/work/flutter"
           channel: "stable"
           shell: alpine.sh {0}
 
@@ -66,8 +66,7 @@ jobs:
       - name: Build Flutter Linux app bundle
         shell: alpine.sh {0}
         run: |
-          pwd
-          ls $FLUTTER_ROOT
+          rm $FLUTTER_ROOT/bin/cache/*.stamp
           export PATH=$PATH:$FLUTTER_ROOT/bin
           flutter config --enable-linux-desktop
           flutter pub get
