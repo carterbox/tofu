@@ -28,11 +28,12 @@ jobs:
           - [x86_64, x64]
           - [aarch64, arm64]
     needs: set-the-build-number
-    name: Build and compress a Flutter Linux app bundle
+    name: Build and compress a Linux ${{ matrix.architecture[0] }} app bundle
     runs-on: ubuntu-latest
     steps:
       - uses: jirutka/setup-alpine@v1
         with:
+          volumes: ${{ runner.tool_cache }}:${{ runner.tool_cache }}
           arch: ${{ matrix.architecture[0] }}
           branch: latest-stable
           packages: >
