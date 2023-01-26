@@ -21,50 +21,71 @@ jobs:
     outputs:
       build-number: ${{ steps.step1.outputs.BUILD_NUMBER }}
 
-  build-flutter-linux-x86:
+  build-flutter-linux:
+    strategy:
+      matrix:
+        architecture:
+          - [x86_64, x64]
+          - [aarch64, arm64]
     needs: set-the-build-number
     name: Build and compress a Flutter Linux app bundle
     runs-on: ubuntu-latest
     steps:
-      - name: Install Flutter dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev ninja-build
+      - uses: jirutka/setup-alpine@v1
+        with:
+          arch: ${{ matrix.architecture[0] }}
+          branch: latest-stable
+          packages: >
+            build-base
+            gtk+3.0
+            samurai
+            bash
+            curl
+            file
+            git
+            xz
+            zip
+
+      - name: Run script inside Alpine chroot with aarch64 emulation
+        run: uname -m
+        shell: alpine.sh {0}
 
       - uses: subosito/flutter-action@v2
         with:
           channel: "stable"
+          architecture: ${{ matrix.architecture[1] }}
 
       - name: Checkout source
         uses: actions/checkout@v3
 
       - name: Build Flutter Linux app bundle
+        shell: alpine.sh {0}
         run: |
           flutter config --enable-linux-desktop
           flutter pub get
-          flutter build linux --release --target-platform linux-x64 --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
+          flutter build linux --release --target-platform linux-${{ matrix.architecture[1] }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
 
       - name: Compress Flutter build
         run: |
-          cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/x64/release/bundle/io.github.carterbox.Tofu.metainfo.xml
-          cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/x64/release/bundle/io.github.carterbox.Tofu.desktop
-          cp -v web/icons/Icon-maskable-512.png build/linux/x64/release/bundle/icon.png
-          tar -C build/linux/x64/release/bundle -acvf tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz .
-          sha256sum tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-x86_64-${{ env.BUILD_NAME }}-sha256sum.txt
+          cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/${{ matrix.architecture[1] }}/release/bundle/io.github.carterbox.Tofu.metainfo.xml
+          cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/${{ matrix.architecture[1] }}/release/bundle/io.github.carterbox.Tofu.desktop
+          cp -v web/icons/Icon-maskable-512.png build/linux/${{ matrix.architecture[1] }}/release/bundle/icon.png
+          tar -C build/linux/x64/release/bundle -acvf tofu-linux-${{ matrix.architecture[0] }}-${{ env.BUILD_NAME }}.tar.gz .
+          sha256sum tofu-linux-${{ matrix.architecture[0] }}-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-${{ matrix.architecture[0] }}-${{ env.BUILD_NAME }}-sha256sum.txt
 
       - name: Upload files as artifacts to the release
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
-            tofu-linux-x86_64-${{ env.BUILD_NAME }}-sha256sum.txt
-            tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz
+            tofu-linux-${{ matrix.architecture[0] }}-${{ env.BUILD_NAME }}-sha256sum.txt
+            tofu-linux-${{ matrix.architecture[0] }}-${{ env.BUILD_NAME }}.tar.gz
           token: ${{ secrets.LINUX_RELEASE_TOKEN }}
 
       # - name: Upload app archive for next steps
       #   uses: actions/upload-artifact@v2
       #   with:
-      #     name: tofu-archive-x86_64
-      #     path: tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz
+      #     name: tofu-archive-${{ matrix.architecture[0] }}
+      #     path: tofu-linux-${{ matrix.architecture[0] }}-${{ env.BUILD_NAME }}.tar.gz
 
   build-flutter-google-play:
     needs: set-the-build-number
