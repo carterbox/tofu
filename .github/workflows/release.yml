@@ -48,6 +48,7 @@ jobs:
             xz
             xz-dev
             zip
+            jq
 
       - name: Run script inside Alpine chroot with aarch64 emulation
         run: uname -m
