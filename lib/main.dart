@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TOfU',
-      home: const MyHomePage(title: 'Time OF Use'),
+      home: const MyHomePage(title: 'Hourly Energy Rates'),
       theme: ThemeData.from(
         colorScheme: lightColorScheme,
       ),
@@ -111,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               ListTile(
                 leading: const Icon(Icons.copyright),
-                title: const Text('Open Source Licenses'),
+                title: const Text('Licenses'),
                 selected: _selectedDestination == 1,
                 onTap: () {
                   Navigator.of(context).pop();
