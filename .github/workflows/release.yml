@@ -66,6 +66,8 @@ jobs:
       - name: Build Flutter Linux app bundle
         shell: alpine.sh {0}
         run: |
+          ls $FLUTTER_ROOT
+          export PATH=$PATH:$FLUTTER_ROOT/bin
           flutter config --enable-linux-desktop
           flutter pub get
           flutter build linux --release --target-platform linux-${{ matrix.architecture[1] }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
