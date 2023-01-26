@@ -53,9 +53,10 @@ jobs:
         run: uname -m
         shell: alpine.sh {0}
 
-      - uses: subosito/flutter-action@v2.8.0
+      - uses: carterbox/flutter-action@main
         with:
           channel: "stable"
+          shell: alpine.sh {0}
 
       - name: Checkout source
         uses: actions/checkout@v3
