@@ -36,24 +36,26 @@ jobs:
           arch: ${{ matrix.architecture[0] }}
           branch: latest-stable
           packages: >
-            build-base
-            gtk+3.0
-            samurai
             bash
+            clang
+            cmake
             curl
             file
             git
+            gtk+3.0
+            pkgconf
+            samurai
             xz
+            xz-dev
             zip
 
       - name: Run script inside Alpine chroot with aarch64 emulation
         run: uname -m
         shell: alpine.sh {0}
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2.8.0
         with:
           channel: "stable"
-          architecture: ${{ matrix.architecture[1] }}
 
       - name: Checkout source
         uses: actions/checkout@v3
