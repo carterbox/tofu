@@ -1,6 +1,20 @@
 import 'package:flutter/material.dart';
 
-const lightColorScheme = ColorScheme(
+class TofuAppTheme {
+  static ThemeData lightTheme(ColorScheme? lightColorScheme){
+    return ThemeData.from(
+        colorScheme: lightColorScheme ?? tofuLightColorScheme,
+      );
+  }
+
+  static ThemeData darkTheme(ColorScheme? darkColorScheme){
+    return ThemeData.from(
+        colorScheme: darkColorScheme ?? tofuDarkColorScheme,
+      );
+  }
+}
+
+const tofuLightColorScheme = ColorScheme(
   brightness: Brightness.light,
   primary: Color(0xFF7D5800),
   onPrimary: Color(0xFFFFFFFF),
@@ -34,7 +48,7 @@ const lightColorScheme = ColorScheme(
   // scrim: Color(0xFF000000),
 );
 
-const darkColorScheme = ColorScheme(
+const tofuDarkColorScheme = ColorScheme(
   brightness: Brightness.dark,
   primary: Color(0xFFF9BC49),
   onPrimary: Color(0xFF422C00),

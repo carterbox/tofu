@@ -43,24 +43,24 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TOfU',
-      home: const MyHomePage(title: 'Hourly Energy Rates'),
-      theme: ThemeData.from(
-        colorScheme: lightColorScheme,
-      ),
-      darkTheme: ThemeData.from(
-        colorScheme: darkColorScheme,
-      ),
-      themeMode: ThemeMode.system,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en', 'US'),
-      ],
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        return MaterialApp(
+          title: 'TOfU',
+          home: const MyHomePage(title: 'Hourly Energy Rates'),
+          theme: TofuAppTheme.lightTheme(lightDynamic),
+          darkTheme: TofuAppTheme.darkTheme(darkDynamic),
+          themeMode: ThemeMode.system,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en', 'US'),
+          ],
+        );
+      }
     );
   }
 }
