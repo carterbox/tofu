@@ -171,9 +171,9 @@ class StreamingSolarCircle extends ConsumerWidget {
       radius: 0.255,
       today: dayInfo,
       dayColor:
-          Colors.amber.harmonizeWith(Theme.of(context).colorScheme.primary),
+          const Color(0xFFF7CD5D).harmonizeWith(Theme.of(context).colorScheme.primary),
       nightColor:
-          Colors.indigo.harmonizeWith(Theme.of(context).colorScheme.primary),
+          const Color(0xFF041A40).harmonizeWith(Theme.of(context).colorScheme.primary),
     );
   }
 }
