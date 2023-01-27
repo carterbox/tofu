@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: fischerscode/flutter:stable
-      options: --arch ${{ matrix.docker-arch }}
+      options: --platform linux/${{ matrix.docker-arch }}
     steps:
       # - uses: carterbox/flutter-action@main
       #   with:
