@@ -23,16 +23,20 @@ jobs:
 
   build-flutter-linux:
     strategy:
+      fail-fast: false
       matrix:
         architecture: [x64, arm64]
         include:
           - architecture: x64
-            base_image: raspios_lite:latest
+            docker-arch: amd64
           - architecture: arm64
-            base_image: raspios_lite_arm64:latest
+            docker-arch: arm64
     needs: set-the-build-number
     name: Build and compress a Linux ${{ matrix.architecture }} app bundle
     runs-on: ubuntu-latest
+    container:
+      image: fisherscode/flutter:stable
+      options: --arch ${{ matrix.docker-arch }}
     steps:
       # - uses: carterbox/flutter-action@main
       #   with:
@@ -43,19 +47,16 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build Flutter Linux app bundle
-        uses: pguyot/arm-runner-action@v2
-        with:
-          base_image: ${{ matrix.base_image }}
-          commands: |
-            uname -m
-            pwd
-            ls
-            # rm -rf $FLUTTER_ROOT/bin/cache
-            # export PATH=$PATH:$FLUTTER_ROOT/bin
-            # flutter doctor
-            # flutter config --enable-linux-desktop
-            # flutter pub get
-            # flutter build linux --release --target-platform linux-${{ matrix.architecture }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
+        run: |
+          uname -m
+          pwd
+          ls
+          # rm -rf $FLUTTER_ROOT/bin/cache
+          # export PATH=$PATH:$FLUTTER_ROOT/bin
+          flutter doctor
+          # flutter config --enable-linux-desktop
+          # flutter pub get
+          # flutter build linux --release --target-platform linux-${{ matrix.architecture }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
 
       - name: Compress Flutter build
         run: |
