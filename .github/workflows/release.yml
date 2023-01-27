@@ -40,6 +40,13 @@ jobs:
         with:
           platforms: ${{ matrix.docker-arch }}
 
+      - name: Pull Docker image
+        run: >
+          docker pull
+          --quiet
+          --platform linux/${{ matrix.docker-arch }}
+          fischerscode/flutter:stable
+
       - name: Checkout source
         uses: actions/checkout@v3
 
@@ -51,17 +58,13 @@ jobs:
           fischerscode/flutter:stable
           /bin/bash -c
           "
-          uname -m;
-          pwd;
-          ls;
-          flutter doctor
+          apt install clang cmake ninja-build pkg-config;
+          flutter config --enable-linux-desktop --no-enable-android --no-enable-web;
+          flutter doctor;
+          cd Documents;
+          flutter pub get;
+          flutter build linux --release --target-platform linux-${{ matrix.architecture }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
           "
-          # rm -rf $FLUTTER_ROOT/bin/cache
-          # export PATH=$PATH:$FLUTTER_ROOT/bin
-          # flutter doctor
-          # flutter config --enable-linux-desktop
-          # flutter pub get
-          # flutter build linux --release --target-platform linux-${{ matrix.architecture }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
 
       - name: Compress Flutter build
         run: |
