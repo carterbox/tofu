@@ -35,13 +35,18 @@ jobs:
     name: Build and compress a Linux ${{ matrix.architecture }} app bundle
     runs-on: ubuntu-latest
     container:
-      image: fisherscode/flutter:stable
+      image: fischerscode/flutter:stable
       options: --arch ${{ matrix.docker-arch }}
     steps:
       # - uses: carterbox/flutter-action@main
       #   with:
       #     cache-path: "/home/runner/work/flutter"
       #     channel: "stable"
+
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v2
+      #   with:
+      #     platforms: ${{ matrix.docker-arch }}
 
       - name: Checkout source
         uses: actions/checkout@v3
