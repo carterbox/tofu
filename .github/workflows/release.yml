@@ -34,30 +34,31 @@ jobs:
     needs: set-the-build-number
     name: Build and compress a Linux ${{ matrix.architecture }} app bundle
     runs-on: ubuntu-latest
-    container:
-      image: --platform linux/${{ matrix.docker-arch }} fischerscode/flutter:stable
     steps:
-      # - uses: carterbox/flutter-action@main
-      #   with:
-      #     cache-path: "/home/runner/work/flutter"
-      #     channel: "stable"
-
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v2
-      #   with:
-      #     platforms: ${{ matrix.docker-arch }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: ${{ matrix.docker-arch }}
 
       - name: Checkout source
         uses: actions/checkout@v3
 
       - name: Build Flutter Linux app bundle
-        run: |
-          uname -m
-          pwd
-          ls
+        run: >
+          docker run
+          --platform linux/${{ matrix.docker-arch }}
+          --volume $(pwd):/home/flutter/Documents
+          fischerscode/flutter:stable
+          /bin/bash -c
+          "
+          uname -m;
+          pwd;
+          ls;
+          flutter doctor
+          "
           # rm -rf $FLUTTER_ROOT/bin/cache
           # export PATH=$PATH:$FLUTTER_ROOT/bin
-          flutter doctor
+          # flutter doctor
           # flutter config --enable-linux-desktop
           # flutter pub get
           # flutter build linux --release --target-platform linux-${{ matrix.architecture }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
