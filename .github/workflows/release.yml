@@ -35,8 +35,7 @@ jobs:
     name: Build and compress a Linux ${{ matrix.architecture }} app bundle
     runs-on: ubuntu-latest
     container:
-      image: fischerscode/flutter:stable
-      options: --platform linux/${{ matrix.docker-arch }}
+      image: --platform linux/${{ matrix.docker-arch }} fischerscode/flutter:stable
     steps:
       # - uses: carterbox/flutter-action@main
       #   with:
