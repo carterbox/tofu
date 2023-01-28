@@ -46,6 +46,8 @@ jobs:
             cp -v web/icons/Icon-maskable-512.png build/linux/arm64/release/bundle/icon.png
             tar -C build/linux/arm64/release/bundle -acvf tofu-linux-arm64-$BUILD_NAME.tar.gz .
             sha256sum tofu-linux-arm64-$BUILD_NAME.tar.gz > tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
+            ls
+            pwd
 
       - store_artifacts:
           path: tofu-linux-arm64-$BUILD_NAME.tar.gz
