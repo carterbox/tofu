@@ -15,7 +15,7 @@ jobs:
           name: Install Flutter dependencies
           command: | 
             sudo apt-get update
-            sudo apt-get install -y libgtk-3-dev ninja-build bash curl file xz zip clang cmake pkg-config
+            sudo apt-get install -y libgtk-3-dev ninja-build bash curl file xz-utils zip clang cmake pkg-config
 
       - checkout
 
