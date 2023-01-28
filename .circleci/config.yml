@@ -24,16 +24,13 @@ jobs:
       - run:
           name: Download the Flutter SDK
           command: |
-            git clone https://github.com/flutter/flutter.git -b stable
+            git clone https://github.com/flutter/flutter.git -b 3.3.10
             echo 'export PATH="$PATH:`pwd`/flutter/bin"' >> "$BASH_ENV"
 
       - run: 
           name: Build Flutter Linux app bundle
           command: |
-            echo $PATH
-            echo $BUILD_NUMBER
-            echo $BUILD_NAME
-            flutter config --enable-linux-desktop
+            flutter config --enable-linux-desktop --no-enable-android
             flutter doctor
             flutter pub get
             flutter build linux --release --target-platform linux-arm64 --build-name $BUILD_NAME --build-number ${BUILD_NUMBER}
