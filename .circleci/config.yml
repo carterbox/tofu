@@ -49,9 +49,6 @@ jobs:
             ls
             pwd
 
-      - store_artifacts:
-          path: tofu-linux-arm64-*
-
       - gh/setup
 
       - run:
