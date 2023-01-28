@@ -48,9 +48,10 @@ jobs:
             sha256sum tofu-linux-arm64-$BUILD_NAME.tar.gz > tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
 
       - store_artifacts:
-          path: |
-            tofu-linux-arm64-$BUILD_NAME.tar.gz
-            tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
+          path: tofu-linux-arm64-$BUILD_NAME.tar.gz
+
+      - store_artifacts:
+          path: tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
 
       - when:
           condition: 
