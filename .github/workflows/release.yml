@@ -46,7 +46,6 @@ jobs:
           pwd
           flutter config --enable-linux-desktop --no-enable-android --no-enable-web
           flutter doctor
-          cd Documents
           flutter pub get
           flutter build linux --release --target-platform linux-${{ matrix.flutter-arch }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
 
