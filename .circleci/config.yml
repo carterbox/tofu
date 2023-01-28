@@ -9,7 +9,7 @@ jobs:
     steps:
       - run: 
           name: Set the build number from current date
-          command: export BUILD_NUMBER=$( date +"%Y%m%d%H" )
+          command: echo 'export BUILD_NUMBER=$( date +"%Y%m%d%H" )' >> "$BASH_ENV"
 
       - run:
           name: Install Flutter dependencies
@@ -23,15 +23,19 @@ jobs:
           name: Download the Flutter SDK
           command: |
             git clone https://github.com/flutter/flutter.git -b stable
-            export PATH="$PATH:`pwd`/flutter/bin"
+            echo 'export PATH="$PATH:`pwd`/flutter/bin"' >> "$BASH_ENV"
 
       - run: 
           name: Build Flutter Linux app bundle
           command: |
+            echo $PATH
+            echo $BUILD_NUMBER
+            echo 'export BUILD_NAME=$(git describe --tags)' >> "$BASH_ENV"
+            echo $BUILD_NAME
             flutter config --enable-linux-desktop
             flutter doctor
             flutter pub get
-            flutter build linux --release --target-platform linux-x64 --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
+            flutter build linux --release --target-platform linux-x64 --build-name $BUILD_NAME --build-number ${BUILD_NUMBER}
 
       - run:
           name: Compress Flutter build
