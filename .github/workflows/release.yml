@@ -25,14 +25,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        architecture: [x64, arm64]
+        flutter-arch: [x64, arm64]
         include:
-          - architecture: x64
+          - flutter-arch: x64
             docker-arch: amd64
-          - architecture: arm64
+          - flutter-arch: arm64
             docker-arch: arm64
     needs: set-the-build-number
-    name: Build and compress a Linux ${{ matrix.architecture }} app bundle
+    name: Build and compress a Linux ${{ matrix.flutter-arch }} app bundle
     runs-on: ubuntu-latest
     steps:
       - name: Set up QEMU
@@ -45,7 +45,7 @@ jobs:
           docker pull
           --quiet
           --platform linux/${{ matrix.docker-arch }}
-          fischerscode/flutter:stable
+          ghcr.io/carterbox/flutter:3.3.10
 
       - name: Checkout source
         uses: actions/checkout@v3
@@ -55,38 +55,38 @@ jobs:
           docker run
           --platform linux/${{ matrix.docker-arch }}
           --volume $(pwd):/home/flutter/Documents
-          fischerscode/flutter:stable
+          ghcr.io/carterbox/flutter:3.3.10
           /bin/bash -c
           "
-          apt install clang cmake ninja-build pkg-config;
+          sudo apt-get install clang cmake ninja-build pkg-config;
           flutter config --enable-linux-desktop --no-enable-android --no-enable-web;
           flutter doctor;
           cd Documents;
           flutter pub get;
-          flutter build linux --release --target-platform linux-${{ matrix.architecture }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
+          flutter build linux --release --target-platform linux-${{ matrix.flutter-arch }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
           "
 
       - name: Compress Flutter build
         run: |
-          cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/${{ matrix.architecture }}/release/bundle/io.github.carterbox.Tofu.metainfo.xml
-          cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/${{ matrix.architecture }}/release/bundle/io.github.carterbox.Tofu.desktop
-          cp -v web/icons/Icon-maskable-512.png build/linux/${{ matrix.architecture }}/release/bundle/icon.png
-          tar -C build/linux/x64/release/bundle -acvf tofu-linux-${{ matrix.architecture }}-${{ env.BUILD_NAME }}.tar.gz .
-          sha256sum tofu-linux-${{ matrix.architecture }}-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-${{ matrix.architecture }}-${{ env.BUILD_NAME }}-sha256sum.txt
+          cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/${{ matrix.flutter-arch }}/release/bundle/io.github.carterbox.Tofu.metainfo.xml
+          cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/${{ matrix.flutter-arch }}/release/bundle/io.github.carterbox.Tofu.desktop
+          cp -v web/icons/Icon-maskable-512.png build/linux/${{ matrix.flutter-arch }}/release/bundle/icon.png
+          tar -C build/linux/x64/release/bundle -acvf tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}.tar.gz .
+          sha256sum tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}-sha256sum.txt
 
       - name: Upload files as artifacts to the release
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
-            tofu-linux-${{ matrix.architecture }}-${{ env.BUILD_NAME }}-sha256sum.txt
-            tofu-linux-${{ matrix.architecture }}-${{ env.BUILD_NAME }}.tar.gz
+            tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}-sha256sum.txt
+            tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}.tar.gz
           token: ${{ secrets.LINUX_RELEASE_TOKEN }}
 
       # - name: Upload app archive for next steps
       #   uses: actions/upload-artifact@v2
       #   with:
-      #     name: tofu-archive-${{ matrix.architecture }}
-      #     path: tofu-linux-${{ matrix.architecture }}-${{ env.BUILD_NAME }}.tar.gz
+      #     name: tofu-archive-${{ matrix.flutter-arch }}
+      #     path: tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}.tar.gz
 
   build-flutter-google-play:
     needs: set-the-build-number
