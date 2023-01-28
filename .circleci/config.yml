@@ -1,13 +1,10 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
   build-flutter-linux-arm:
     machine:
-      image: arm-default
+      image: ubuntu-2004:202101-01
+    resource_class: arm.medium
     
     steps:
       - run: 
