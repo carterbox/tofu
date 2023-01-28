@@ -7,17 +7,19 @@ jobs:
     resource_class: arm.medium
     
     steps:
+      - checkout
+
       - run: 
           name: Set the build number from current date
-          command: echo 'export BUILD_NUMBER=$( date +"%Y%m%d%H" )' >> "$BASH_ENV"
+          command: |
+            echo 'export BUILD_NUMBER=$( date +"%Y%m%d%H" )' >> "$BASH_ENV"
+            echo 'export BUILD_NAME=$( git describe --tags )' >> "$BASH_ENV"
 
       - run:
           name: Install Flutter dependencies
           command: | 
             sudo apt-get update
             sudo apt-get install -y libgtk-3-dev ninja-build bash curl file xz-utils zip clang cmake pkg-config
-
-      - checkout
 
       - run:
           name: Download the Flutter SDK
@@ -30,21 +32,20 @@ jobs:
           command: |
             echo $PATH
             echo $BUILD_NUMBER
-            echo 'export BUILD_NAME=$(git describe --tags)' >> "$BASH_ENV"
             echo $BUILD_NAME
             flutter config --enable-linux-desktop
             flutter doctor
             flutter pub get
-            flutter build linux --release --target-platform linux-x64 --build-name $BUILD_NAME --build-number ${BUILD_NUMBER}
+            flutter build linux --release --target-platform linux-arm64 --build-name $BUILD_NAME --build-number ${BUILD_NUMBER}
 
       - run:
           name: Compress Flutter build
           command: |
-            cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/x64/release/bundle/io.github.carterbox.Tofu.metainfo.xml
-            cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/x64/release/bundle/io.github.carterbox.Tofu.desktop
-            cp -v web/icons/Icon-maskable-512.png build/linux/x64/release/bundle/icon.png
-            tar -C build/linux/x64/release/bundle -acvf tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz .
-            sha256sum tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-x86_64-${{ env.BUILD_NAME }}-sha256sum.txt
+            cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/arm64/release/bundle/io.github.carterbox.Tofu.metainfo.xml
+            cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/arm64/release/bundle/io.github.carterbox.Tofu.desktop
+            cp -v web/icons/Icon-maskable-512.png build/linux/arm64/release/bundle/icon.png
+            tar -C build/linux/arm64/release/bundle -acvf tofu-linux-arm64-${{ env.BUILD_NAME }}.tar.gz .
+            sha256sum tofu-linux-arm64-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-arm64-${{ env.BUILD_NAME }}-sha256sum.txt
 
 
 workflows:
