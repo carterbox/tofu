@@ -55,10 +55,10 @@ jobs:
           docker run
           --platform linux/${{ matrix.docker-arch }}
           --volume $(pwd):/home/flutter/Documents
+          --user $(id -u):$(id -g)
           ghcr.io/carterbox/flutter:3.3.10
           /bin/bash -c
           "
-          sudo apt-get install clang cmake ninja-build pkg-config;
           flutter config --enable-linux-desktop --no-enable-android --no-enable-web;
           flutter doctor;
           cd Documents;
