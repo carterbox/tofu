@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  github-cli: circleci/github-cli@2.2.0
+
 jobs:
   build-flutter-linux-arm:
     machine:
@@ -41,9 +44,20 @@ jobs:
             cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/arm64/release/bundle/io.github.carterbox.Tofu.metainfo.xml
             cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/arm64/release/bundle/io.github.carterbox.Tofu.desktop
             cp -v web/icons/Icon-maskable-512.png build/linux/arm64/release/bundle/icon.png
-            tar -C build/linux/arm64/release/bundle -acvf tofu-linux-arm64-${{ env.BUILD_NAME }}.tar.gz .
-            sha256sum tofu-linux-arm64-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-arm64-${{ env.BUILD_NAME }}-sha256sum.txt
+            tar -C build/linux/arm64/release/bundle -acvf tofu-linux-arm64-$BUILD_NAME.tar.gz .
+            sha256sum tofu-linux-arm64-$BUILD_NAME.tar.gz > tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
 
+      - store_artifacts:
+          path: |
+            tofu-linux-arm64-$BUILD_NAME.tar.gz
+            tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
+
+      - run:
+          name: Upload artifacts to GitHub
+          command: >
+            gh release upload $BUILD_NAME
+            tofu-linux-arm64-$BUILD_NAME.tar.gz
+            tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
 
 workflows:
   builds-on-arm:
