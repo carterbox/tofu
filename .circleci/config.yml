@@ -8,11 +8,11 @@ jobs:
     machine:
       image: ubuntu-2004:202101-01
     resource_class: arm.medium
-    
+
     steps:
       - checkout
 
-      - run: 
+      - run:
           name: Set the build number from current date
           command: |
             echo 'export BUILD_NUMBER=$( date +"%Y%m%d%H" )' >> "$BASH_ENV"
@@ -20,7 +20,7 @@ jobs:
 
       - run:
           name: Install Flutter dependencies
-          command: | 
+          command: |
             sudo apt-get update
             sudo apt-get install -y libgtk-3-dev ninja-build bash curl file xz-utils zip clang cmake pkg-config
 
@@ -30,7 +30,7 @@ jobs:
             git clone https://github.com/flutter/flutter.git -b 3.3.10
             echo 'export PATH="$PATH:`pwd`/flutter/bin"' >> "$BASH_ENV"
 
-      - run: 
+      - run:
           name: Build Flutter Linux app bundle
           command: |
             flutter config --enable-linux-desktop --no-enable-android
@@ -52,23 +52,19 @@ jobs:
       - store_artifacts:
           path: tofu-linux-arm64-*
 
-      - when:
-          condition: 
-            matches: { pattern: "^[0-9]+.[0-9]+.[0-9]+$", value: << pipeline.git.tag >> }
-          steps:
+      - gh/setup
 
-            - gh/setup
-
-            - run:
-                name: Upload artifacts to GitHub
-                command: >
-                  gh release upload $BUILD_NAME
-                  tofu-linux-arm64-$BUILD_NAME.tar.gz
-                  tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
+      - run:
+          name: Upload artifacts to GitHub
+          command: >
+            gh release upload $BUILD_NAME
+            tofu-linux-arm64-$BUILD_NAME.tar.gz
+            tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
 
 workflows:
   builds-on-arm:
-    when:
-      matches: { pattern: /[0-9]+.[0-9]+.[0-9]+/, value: << pipeline.git.tag >> }
     jobs:
-      - build-flutter-linux-arm
+      - build-flutter-linux-arm:
+          filters:
+            tags:
+              only: /^[0-9]+.[0-9]+.[0-9]+$/
