@@ -8,7 +8,6 @@ jobs:
   build-flutter-linux-arm:
     machine:
       image: arm-default
-    resource_class: arm.medium
     
     steps:
       - run: 
