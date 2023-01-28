@@ -1,0 +1,53 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+jobs:
+  build-flutter-linux-arm:
+    machine:
+        image: ubuntu-2004
+    resource_class: arm.medium
+    
+    steps:
+      - run: 
+          name: Set the build number from current date
+          command: export BUILD_NUMBER=$( date +"%Y%m%d%H" )
+
+      - run:
+          name: Install Flutter dependencies
+          command: | 
+            sudo apt-get update
+            sudo apt-get install -y libgtk-3-dev ninja-build bash curl file xz zip clang cmake pkg-config
+
+      - checkout
+
+      - run:
+          name: Download the Flutter SDK
+          command: |
+            git clone https://github.com/flutter/flutter.git -b stable
+            export PATH="$PATH:`pwd`/flutter/bin"
+
+      - run: 
+          name: Build Flutter Linux app bundle
+          command: |
+            flutter config --enable-linux-desktop
+            flutter doctor
+            flutter pub get
+            flutter build linux --release --target-platform linux-x64 --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
+
+      - run:
+          name: Compress Flutter build
+          command: |
+            cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/x64/release/bundle/io.github.carterbox.Tofu.metainfo.xml
+            cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/x64/release/bundle/io.github.carterbox.Tofu.desktop
+            cp -v web/icons/Icon-maskable-512.png build/linux/x64/release/bundle/icon.png
+            tar -C build/linux/x64/release/bundle -acvf tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz .
+            sha256sum tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-x86_64-${{ env.BUILD_NAME }}-sha256sum.txt
+
+
+workflows:
+  builds-on-arm:
+    jobs:
+      - build-flutter-linux-arm
