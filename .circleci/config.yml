@@ -7,7 +7,7 @@ version: 2.1
 jobs:
   build-flutter-linux-arm:
     machine:
-        image: ubuntu-2004
+      image: ubuntu-2004:202101-01
     resource_class: arm.medium
     
     steps:
