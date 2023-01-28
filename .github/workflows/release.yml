@@ -54,8 +54,7 @@ jobs:
         run: >
           docker run
           --platform linux/${{ matrix.docker-arch }}
-          --volume $(pwd):/home/flutter/Documents
-          --user $(id -u):$(id -g)
+          --volume $(pwd):/home/flutter/Documents:rw
           ghcr.io/carterbox/flutter:3.3.10
           /bin/bash -c
           "
