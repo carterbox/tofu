@@ -50,10 +50,7 @@ jobs:
             pwd
 
       - store_artifacts:
-          path: tofu-linux-arm64-$BUILD_NAME.tar.gz
-
-      - store_artifacts:
-          path: tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
+          path: tofu-linux-arm64-*
 
       - when:
           condition: 
