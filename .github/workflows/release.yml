@@ -38,6 +38,7 @@ jobs:
     steps:
       - name: Build Flutter Linux app bundle
         run: |
+          cd $HOME
           pwd
           ls
           whoami
