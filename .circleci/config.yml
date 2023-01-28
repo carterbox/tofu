@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  github-cli: circleci/github-cli@2.2.0
+  gh: circleci/github-cli@2.2.0
 
 jobs:
   build-flutter-linux-arm:
@@ -52,14 +52,23 @@ jobs:
             tofu-linux-arm64-$BUILD_NAME.tar.gz
             tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
 
-      - run:
-          name: Upload artifacts to GitHub
-          command: >
-            gh release upload $BUILD_NAME
-            tofu-linux-arm64-$BUILD_NAME.tar.gz
-            tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
+      - when:
+          condition: 
+            matches: { pattern: "^[0-9]+.[0-9]+.[0-9]+$", value: << pipeline.git.tag >> }
+          steps:
+
+            - gh/setup
+
+            - run:
+                name: Upload artifacts to GitHub
+                command: >
+                  gh release upload $BUILD_NAME
+                  tofu-linux-arm64-$BUILD_NAME.tar.gz
+                  tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
 
 workflows:
   builds-on-arm:
+    when:
+      equal: [ main, << pipeline.git.branch >> ]
     jobs:
       - build-flutter-linux-arm
