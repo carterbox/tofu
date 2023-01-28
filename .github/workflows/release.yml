@@ -38,6 +38,9 @@ jobs:
     steps:
       - name: Build Flutter Linux app bundle
         run: |
+          pwd
+          ls
+          whoami
           git clone --depth=1 --branch ${{ github.ref }} ${{ github.repositoryUrl }}
           cd tofu
 
