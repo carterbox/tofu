@@ -34,52 +34,37 @@ jobs:
     needs: set-the-build-number
     name: Build and compress a Linux ${{ matrix.flutter-arch }} app bundle
     runs-on: ubuntu-latest
+    container: --platform linux/${{ matrix.docker-arch }} ghcr.io/carterbox/flutter:3.3.10
     steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: ${{ matrix.docker-arch }}
-
-      - name: Pull Docker image
-        run: >
-          docker pull
-          --quiet
-          --platform linux/${{ matrix.docker-arch }}
-          ghcr.io/carterbox/flutter:3.3.10
-
-      - name: Checkout source
-        uses: actions/checkout@v3
+      - name: Build Flutter Linux app bundle
+        run: |
+          git clone --depth=1 --branch ${{ github.ref }} ${{ github.repositoryUrl }}
+          cd tofu
 
       - name: Build Flutter Linux app bundle
-        run: >
-          docker run
-          --platform linux/${{ matrix.docker-arch }}
-          --volume $(pwd):/home/flutter/Documents:rw
-          ghcr.io/carterbox/flutter:3.3.10
-          /bin/bash -c
-          "
-          flutter config --enable-linux-desktop --no-enable-android --no-enable-web;
-          flutter doctor;
-          cd Documents;
-          flutter pub get;
-          flutter build linux --release --target-platform linux-${{ matrix.flutter-arch }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
-          "
-
-      - name: Compress Flutter build
         run: |
-          cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/${{ matrix.flutter-arch }}/release/bundle/io.github.carterbox.Tofu.metainfo.xml
-          cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/${{ matrix.flutter-arch }}/release/bundle/io.github.carterbox.Tofu.desktop
-          cp -v web/icons/Icon-maskable-512.png build/linux/${{ matrix.flutter-arch }}/release/bundle/icon.png
-          tar -C build/linux/x64/release/bundle -acvf tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}.tar.gz .
-          sha256sum tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}-sha256sum.txt
+          pwd
+          flutter config --enable-linux-desktop --no-enable-android --no-enable-web
+          flutter doctor
+          cd Documents
+          flutter pub get
+          flutter build linux --release --target-platform linux-${{ matrix.flutter-arch }} --build-name ${{ env.BUILD_NAME }} --build-number ${{ needs.set-the-build-number.outputs.build-number }}
 
-      - name: Upload files as artifacts to the release
-        uses: softprops/action-gh-release@v0.1.15
-        with:
-          files: |
-            tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}-sha256sum.txt
-            tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}.tar.gz
-          token: ${{ secrets.LINUX_RELEASE_TOKEN }}
+      # - name: Compress Flutter build
+      #   run: |
+      #     cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/${{ matrix.flutter-arch }}/release/bundle/io.github.carterbox.Tofu.metainfo.xml
+      #     cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/${{ matrix.flutter-arch }}/release/bundle/io.github.carterbox.Tofu.desktop
+      #     cp -v web/icons/Icon-maskable-512.png build/linux/${{ matrix.flutter-arch }}/release/bundle/icon.png
+      #     tar -C build/linux/x64/release/bundle -acvf tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}.tar.gz .
+      #     sha256sum tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}-sha256sum.txt
+
+      # - name: Upload files as artifacts to the release
+      #   uses: softprops/action-gh-release@v0.1.15
+      #   with:
+      #     files: |
+      #       tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}-sha256sum.txt
+      #       tofu-linux-${{ matrix.flutter-arch }}-${{ env.BUILD_NAME }}.tar.gz
+      #     token: ${{ secrets.LINUX_RELEASE_TOKEN }}
 
       # - name: Upload app archive for next steps
       #   uses: actions/upload-artifact@v2
