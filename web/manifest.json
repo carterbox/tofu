@@ -1,6 +1,6 @@
 {
-    "name": "tofu",
-    "short_name": "tofu",
+    "name": "electricity_clock",
+    "short_name": "electricity_clock",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "io.github.carterbox" "\0"
-            VALUE "FileDescription", "tofu" "\0"
+            VALUE "FileDescription", "electricity_clock" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "tofu" "\0"
+            VALUE "InternalName", "electricity_clock" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2022 Daniel Jackson Ching. All rights reserved." "\0"
-            VALUE "OriginalFilename", "tofu.exe" "\0"
-            VALUE "ProductName", "tofu" "\0"
+            VALUE "OriginalFilename", "electricity_clock.exe" "\0"
+            VALUE "ProductName", "electricity_clock" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

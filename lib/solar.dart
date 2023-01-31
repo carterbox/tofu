@@ -1,4 +1,4 @@
-// tofu, an app for monitorign time-of-use electricity rates
+// electricity_clock, an app for monitorign time-of-use electricity rates
 // Copyright (C) 2022 Daniel Jackson Ching
 //
 // This program is free software: you can redistribute it and/or modify

@@ -5,18 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "tofu",
+            "name": "electricity_clock",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "tofu (profile mode)",
+            "name": "electricity_clock (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "tofu (release mode)",
+            "name": "electricity_clock (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

@@ -1,4 +1,4 @@
-package io.github.carterbox.tofu
+package io.github.carterbox.electricity_clock
 
 import io.flutter.embedding.android.FlutterActivity
 

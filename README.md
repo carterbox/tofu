@@ -1,4 +1,4 @@
-# TOfU
+# Electricity Clock
 
 Time OF Use monitoring for electricity rates. Displays trends, real-time, and
 predicted electricity rates as 24 hour clock.

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2022 Daniel Ching <daniel.j.ching@gmail.com> -->
 <component type="desktop-application">
-    <id>io.github.carterbox.Tofu</id>
+    <id>io.github.carterbox.electricity_clock</id>
     <metadata_license>FSFAP</metadata_license>
     <project_license>GPL-3.0-or-later</project_license>
-    <name>TOfU</name>
+    <name>electricity_clock</name>
     <summary>Time OF Use monitoring for electricity rates</summary>
 
     <description>
@@ -28,9 +28,9 @@
         <keyword>energy</keyword>
     </keywords>
 
-    <launchable type="desktop-id">io.github.carterbox.Tofu.desktop</launchable>
+    <launchable type="desktop-id">io.github.carterbox.electricity_clock.desktop</launchable>
 
-    <url type="homepage">https://github.com/carterbox/tofu</url>
+    <url type="homepage">https://github.com/carterbox/electricity_clock</url>
 
     <requires>
         <display_length compare="gt">xsmall</display_length>
