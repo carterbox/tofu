@@ -1,4 +1,4 @@
-// tofu, an app for monitoring time-of-use electricity rates
+// electricity_clock, an app for monitoring time-of-use electricity rates
 // Copyright (C) 2022 Daniel Jackson Ching
 //
 // This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@ import 'package:intl/intl.dart' as intl;
 import 'package:logging/logging.dart' as logging;
 
 final _datefmt = intl.NumberFormat('##00', 'en_US');
-final _logger = logging.Logger('tofu.comed');
+final _logger = logging.Logger('electricity_clock.comed');
 
 String _dateWithZeros(DateTime date) {
   final str =

@@ -1,4 +1,4 @@
-// tofu, an app for monitoring time-of-use electricity rates
+// electricity_clock, an app for monitoring time-of-use electricity rates
 // Copyright (C) 2022 Daniel Jackson Ching
 //
 // This program is free software: you can redistribute it and/or modify
@@ -21,9 +21,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
-import 'package:tofu/comed.dart';
-import 'package:tofu/solar.dart';
-import 'package:tofu/theme.dart';
+import 'package:electricity_clock/comed.dart';
+import 'package:electricity_clock/solar.dart';
+import 'package:electricity_clock/theme.dart';
 import 'package:window_size/window_size.dart';
 
 void main() {
@@ -47,7 +47,7 @@ class MyApp extends StatelessWidget {
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
         return MaterialApp(
-          title: 'TOfU',
+          title: 'Electricity Clock',
           home: const MyHomePage(title: 'Hourly Energy Rates'),
           theme: TofuAppTheme.lightTheme(lightDynamic),
           darkTheme: TofuAppTheme.darkTheme(darkDynamic),

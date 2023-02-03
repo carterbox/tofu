@@ -1,11 +1,11 @@
-name: tofu
-description: A Time OF Use monitoring app for electricity rates. Displays trends, real-time, and predicted electricity rates as 24 hour clock.
+name: electricity_clock
+description: A time of use monitoring app for electricity rates. Displays trends, real-time, and predicted electricity rates as 24 hour clock.
 
 flutter_icons:
-  image_path: "assets/icon/tofuplate.png"
+  image_path: "assets/icon/electricity-clock.png"
   android: true
-  adaptive_icon_background: "assets/icon/tofuplate-background.png"
-  adaptive_icon_foreground: "assets/icon/tofuplate-foreground.png"
+  # adaptive_icon_background: "assets/icon/electricity-clock-background.png"
+  adaptive_icon_foreground: "assets/icon/electricity-clock.png"
   web:
     generate: true
   windows:

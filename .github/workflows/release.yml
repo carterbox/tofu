@@ -46,25 +46,23 @@ jobs:
 
       - name: Compress Flutter build
         run: |
-          cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/x64/release/bundle/io.github.carterbox.Tofu.metainfo.xml
-          cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/x64/release/bundle/io.github.carterbox.Tofu.desktop
           cp -v web/icons/Icon-maskable-512.png build/linux/x64/release/bundle/icon.png
-          tar -C build/linux/x64/release/bundle -acvf tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz .
-          sha256sum tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz > tofu-linux-x86_64-${{ env.BUILD_NAME }}-sha256sum.txt
+          tar -C build/linux/x64/release/bundle -acvf ${{ env.PROJECT_ID }}-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz .
+          sha256sum ${{ env.PROJECT_ID }}-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz > ${{ env.PROJECT_ID }}-linux-x86_64-${{ env.BUILD_NAME }}-sha256sum.txt
 
       - name: Upload files as artifacts to the release
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
-            tofu-linux-x86_64-${{ env.BUILD_NAME }}-sha256sum.txt
-            tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz
+            ${{ env.PROJECT_ID }}-linux-x86_64-${{ env.BUILD_NAME }}-sha256sum.txt
+            ${{ env.PROJECT_ID }}-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz
           token: ${{ secrets.LINUX_RELEASE_TOKEN }}
 
       # - name: Upload app archive for next steps
       #   uses: actions/upload-artifact@v2
       #   with:
-      #     name: tofu-archive-x86_64
-      #     path: tofu-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz
+      #     name: ${{ env.PROJECT_ID }}-archive-x86_64
+      #     path: ${{ env.PROJECT_ID }}-linux-x86_64-${{ env.BUILD_NAME }}.tar.gz
 
   build-flutter-google-play:
     needs: set-the-build-number
