@@ -30,7 +30,7 @@ jobs:
       - run:
           name: Download the Flutter SDK
           command: |
-            git clone https://github.com/flutter/flutter.git -b 3.3.10
+            git clone https://github.com/flutter/flutter.git -b stable
             echo 'export PATH="$PATH:`pwd`/flutter/bin"' >> "$BASH_ENV"
 
       - run:
