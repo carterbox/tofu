@@ -5,6 +5,9 @@ orbs:
 
 jobs:
   build-flutter-linux-arm:
+    parameters:
+      PROJECT_ID:
+        type: string
     machine:
       image: ubuntu-2004:202101-01
     resource_class: arm.medium
@@ -41,11 +44,9 @@ jobs:
       - run:
           name: Compress Flutter build
           command: |
-            cp -v linux/flatpak/io.github.carterbox.Tofu.metainfo.xml build/linux/arm64/release/bundle/io.github.carterbox.Tofu.metainfo.xml
-            cp -v linux/flatpak/io.github.carterbox.Tofu.desktop build/linux/arm64/release/bundle/io.github.carterbox.Tofu.desktop
             cp -v web/icons/Icon-maskable-512.png build/linux/arm64/release/bundle/icon.png
-            tar -C build/linux/arm64/release/bundle -acvf tofu-linux-arm64-$BUILD_NAME.tar.gz .
-            sha256sum tofu-linux-arm64-$BUILD_NAME.tar.gz > tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
+            tar -C build/linux/arm64/release/bundle -acvf << parameters.PROJECT_ID >>-linux-arm64-$BUILD_NAME.tar.gz .
+            sha256sum << parameters.PROJECT_ID >>-linux-arm64-$BUILD_NAME.tar.gz > << parameters.PROJECT_ID >>-linux-arm64-$BUILD_NAME-sha256sum.txt
             ls
             pwd
 
@@ -55,13 +56,14 @@ jobs:
           name: Upload artifacts to GitHub
           command: >
             gh release upload $BUILD_NAME
-            tofu-linux-arm64-$BUILD_NAME.tar.gz
-            tofu-linux-arm64-$BUILD_NAME-sha256sum.txt
+            << parameters.PROJECT_ID >>-linux-arm64-$BUILD_NAME.tar.gz
+            << parameters.PROJECT_ID >>-linux-arm64-$BUILD_NAME-sha256sum.txt
 
 workflows:
   builds-on-arm:
     jobs:
       - build-flutter-linux-arm:
+          PROJECT_ID: io.github.carterbox.tofu
           filters:
             tags:
               only: /^[0-9]+.[0-9]+.[0-9]+$/
