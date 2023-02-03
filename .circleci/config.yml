@@ -38,6 +38,14 @@ jobs:
           command: |
             flutter config --enable-linux-desktop --no-enable-android
             flutter doctor
+            
+            # patch Flutter engine
+            pushd /tmp
+            curl -O https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.7.0-stable.tar.xz
+            tar -xvf flutter_linux_3.7.0-stable.tar.xz flutter/bin/cache/artifacts/engine/linux-x64/shader_lib
+            cp -R flutter/bin/cache/artifacts/engine/linux-x64/shader_lib ~/flutter/bin/cache/artifacts/engine/linux-arm64
+            popd
+            
             flutter pub get
             flutter build linux --release --target-platform linux-arm64 --build-name $BUILD_NAME --build-number ${BUILD_NUMBER}
 
