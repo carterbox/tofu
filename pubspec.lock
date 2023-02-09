@@ -102,8 +102,10 @@ packages:
     description:
       name: coverage
       sha256: "2fb815080e44a09b85e0f2ca8a820b15053982b2e714b59267719e8a9ff17097"
+      sha256: "2fb815080e44a09b85e0f2ca8a820b15053982b2e714b59267719e8a9ff17097"
       url: "https://pub.dev"
     source: hosted
+    version: "1.6.3"
     version: "1.6.3"
   crypto:
     dependency: transitive
@@ -125,10 +127,10 @@ packages:
     dependency: "direct main"
     description:
       name: dynamic_color
-      sha256: bbebb1b7ebed819e0ec83d4abdc2a8482d934f6a85289ffc1c6acf7589fa2aad
+      sha256: c4a508284b14ec4dda5adba2c28b2cdd34fbae1afead7e8c52cad87d51c5405b
       url: "https://pub.dev"
     source: hosted
-    version: "1.6.3"
+    version: "1.6.2"
   equatable:
     dependency: transitive
     description:
@@ -599,5 +601,5 @@ packages:
     source: hosted
     version: "3.1.1"
 sdks:
-  dart: ">=2.19.0 <3.0.0"
+  dart: ">=2.18.2 <4.0.0"
   flutter: ">=3.4.0-17.0.pre"
