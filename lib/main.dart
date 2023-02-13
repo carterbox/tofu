@@ -45,38 +45,88 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DynamicColorBuilder(
-      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        return MaterialApp(
-          title: 'Electricity Clock',
-          home: const MyHomePage(title: 'Hourly Energy Rates'),
-          theme: TofuAppTheme.lightTheme(lightDynamic),
-          darkTheme: TofuAppTheme.darkTheme(darkDynamic),
-          themeMode: ThemeMode.system,
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('en', 'US'),
-          ],
-        );
-      }
+        builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+      return MaterialApp(
+        title: 'Electricity Clock',
+        home: const HourlyEnergyRatesPage(),
+        theme: TofuAppTheme.lightTheme(lightDynamic),
+        darkTheme: TofuAppTheme.darkTheme(darkDynamic),
+        themeMode: ThemeMode.system,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en', 'US'),
+        ],
+      );
+    });
+  }
+}
+
+class NavigationDrawer extends StatelessWidget {
+  final int selectedDestination;
+  const NavigationDrawer(this.selectedDestination, {super.key});
+
+  @override
+  build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        children: <Widget>[
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Navigation Menu',
+            ),
+          ),
+          const Divider(
+            height: 1,
+            thickness: 1,
+          ),
+          ListTile(
+            leading: const Icon(Icons.price_change),
+            title: const Text('Hourly Energy Rates'),
+            selected: selectedDestination == 0,
+            onTap: () {
+              Navigator.of(context).pop();
+              if (selectedDestination == 0) return;
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) => const HourlyEnergyRatesPage(),
+              ));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: const Text('Historic Energy Usage'),
+            selected: selectedDestination == 1,
+            onTap: () {
+              Navigator.of(context).pop();
+              if (selectedDestination == 1) return;
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (context) => const HistoricEnergyUsePage(),
+              ));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.copyright),
+            title: const Text('Licenses'),
+            selected: selectedDestination == 2,
+            onTap: () {
+              Navigator.of(context).pop();
+              showLicensePage(context: context);
+            },
+          ),
+        ],
+      ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class HourlyEnergyRatesPage extends StatelessWidget {
+  const HourlyEnergyRatesPage({super.key});
 
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _selectedDestination = 0;
+  final String title = 'Hourly Energy Rates';
 
   @override
   Widget build(BuildContext context) {
@@ -84,44 +134,11 @@ class _MyHomePageState extends State<MyHomePage> {
       final layoutIsWide = constraints.maxWidth > 600;
       return Scaffold(
         appBar: AppBar(
-          title: Text(widget.title),
+          title: Text(title),
         ),
         floatingActionButton:
             layoutIsWide ? null : const PriceClockExplainerButton(),
-        drawer: Drawer(
-          child: ListView(
-            children: <Widget>[
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Navigation Menu',
-                ),
-              ),
-              const Divider(
-                height: 1,
-                thickness: 1,
-              ),
-              ListTile(
-                leading: const Icon(Icons.price_change),
-                title: const Text('Hourly Energy Rates'),
-                selected: _selectedDestination == 0,
-                onTap: () {
-                  selectDestination(0);
-                  Navigator.of(context).pop();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.copyright),
-                title: const Text('Licenses'),
-                selected: _selectedDestination == 1,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  showLicensePage(context: context);
-                },
-              ),
-            ],
-          ),
-        ),
+        drawer: const NavigationDrawer(0),
         body: Row(
           children: [
             if (layoutIsWide)
@@ -144,11 +161,21 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     });
   }
+}
 
-  void selectDestination(int index) {
-    setState(() {
-      _selectedDestination = index;
-    });
+class HistoricEnergyUsePage extends StatelessWidget {
+  const HistoricEnergyUsePage({super.key});
+
+  final String title = 'Historic Energy Use';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+      ),
+      drawer: const NavigationDrawer(1),
+    );
   }
 }
 
@@ -171,10 +198,10 @@ class StreamingSolarCircle extends ConsumerWidget {
     return SolarCircle(
       radius: 0.255,
       today: dayInfo,
-      dayColor:
-          const Color(0xFFF7CD5D).harmonizeWith(Theme.of(context).colorScheme.primary),
-      nightColor:
-          const Color(0xFF041A40).harmonizeWith(Theme.of(context).colorScheme.primary),
+      dayColor: const Color(0xFFF7CD5D)
+          .harmonizeWith(Theme.of(context).colorScheme.primary),
+      nightColor: const Color(0xFF041A40)
+          .harmonizeWith(Theme.of(context).colorScheme.primary),
     );
   }
 }
