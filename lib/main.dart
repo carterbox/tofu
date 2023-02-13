@@ -24,6 +24,7 @@ import 'package:logging/logging.dart';
 import 'package:electricity_clock/comed.dart';
 import 'package:electricity_clock/solar.dart';
 import 'package:electricity_clock/theme.dart';
+import 'package:electricity_clock/green_button.dart';
 import 'package:window_size/window_size.dart';
 
 void main() {
@@ -175,6 +176,7 @@ class HistoricEnergyUsePage extends StatelessWidget {
         title: Text(title),
       ),
       drawer: const NavigationDrawer(1),
+      body: const HistoricEnergyUseClock(),
     );
   }
 }

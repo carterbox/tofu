@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+
 /// Represents measured energy use between [start] and [end] times
 class EnergyUse {
   static const String units = 'kWh';
@@ -114,6 +117,27 @@ class HistoricEnergyUse {
       readings: readings
           .where((element) => element.start.compareTo(start) >= 0 && element.end.compareTo(end) < 0)
           .toList(growable: false),
+    );
+  }
+}
+
+class HistoricEnergyUseClock extends StatelessWidget{
+  const HistoricEnergyUseClock({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: MaterialButton(
+        child: const Text('Load data from file'),
+        onPressed: () async {
+          FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['csv']);
+
+          // The result will be null, if the user aborted the dialog
+          if(result != null) {
+            File file = File(result.files.first.path!);
+          }
+        },
+      )
     );
   }
 }
