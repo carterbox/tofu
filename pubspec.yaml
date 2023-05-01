@@ -62,7 +62,7 @@ dependencies:
   flutter_launcher_icons: ^0.12.0
   sunrise_sunset_calc: ^3.0.0
   dynamic_color: ^1.6.2
-  flutter_riverpod: ^2.3.2
+  flutter_riverpod: ^2.3.6
 
 dev_dependencies:
   flutter_test:
