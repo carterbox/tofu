@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:graphic/graphic.dart';
 
 /// Represents measured energy use between [start] and [end] times
+@immutable
 class EnergyUse {
   static const String units = 'kWh';
 
@@ -33,6 +35,7 @@ class EnergyUse {
 }
 
 /// A collection of [EnergyUse] across multiple time periods
+@immutable
 class HistoricEnergyUse {
   /// A list of [EnergyUse]
   final List<EnergyUse> readings;
@@ -104,7 +107,7 @@ class HistoricEnergyUse {
     );
   }
 
-  HistoricEnergyUse filterByMonth(List<int> months){
+  HistoricEnergyUse filterByMonth(List<int> months) {
     return HistoricEnergyUse(
       readings: readings
           .where((element) => months.contains(element.end.month))
@@ -112,32 +115,165 @@ class HistoricEnergyUse {
     );
   }
 
-  HistoricEnergyUse filterByDate(DateTime start, DateTime end){
+  HistoricEnergyUse filterByDate(DateTime start, DateTime end) {
     return HistoricEnergyUse(
       readings: readings
-          .where((element) => element.start.compareTo(start) >= 0 && element.end.compareTo(end) < 0)
+          .where((element) =>
+              element.start.compareTo(start) >= 0 &&
+              element.end.compareTo(end) < 0)
           .toList(growable: false),
     );
   }
 }
 
-class HistoricEnergyUseClock extends StatelessWidget{
-  const HistoricEnergyUseClock({super.key});
+class HistoricEnergyUseClock extends StatelessWidget {
+  const HistoricEnergyUseClock(this.historicEnergyUse, {super.key});
+
+  final HistoricEnergyUse historicEnergyUse;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: MaterialButton(
-        child: const Text('Load data from file'),
-        onPressed: () async {
-          FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['csv']);
+    List<Map> dataSets = [];
+    const colors = [
+      Colors.red,
+      Colors.blue,
+      Colors.orange,
+      Colors.yellow,
+      Colors.green,
+      Colors.indigo,
+      Colors.purple
+    ];
+    const labels = [
+      'Weekdays',
+      'Weekends',
+    ];
+    const groups = [
+      [
+        DateTime.monday,
+        DateTime.tuesday,
+        DateTime.wednesday,
+        DateTime.thursday,
+        DateTime.friday,
+      ],
+      [
+        DateTime.saturday,
+        DateTime.sunday,
+      ],
+    ];
+    for (int i = 0; i < groups.length; i++) {
+      final groupHistoricUse =
+          historicEnergyUse.filterByWeekday(groups[i]).hourlyAverages();
+      for (int hour = 0; hour < 24; hour++) {
+        dataSets.add(
+            {'day': i, 'usage': groupHistoricUse[hour], 'hour': hour});
+      }
+    }
+    return Chart(
+      data: dataSets,
+      variables: {
+        'hour': Variable(
+          accessor: (Map map) => map['hour'] as num,
+        ),
+        'usage': Variable(
+          accessor: (Map map) => map['usage'] as num,
+        ),
+        'day': Variable(
+          accessor: (Map map) => map['day'] as num,
+        ),
+      },
+      elements: [
+        IntervalElement(
+          position:
+              Varset('hour') * Varset('usage') / Varset('day'),
+          color: ColorAttr(
+              variable: 'day', values: Defaults.colors10),
+          size: SizeAttr(value: 2),
+          modifiers: [DodgeModifier(ratio: 0.1)],
+        )
+      ],
+      axes: [
+        Defaults.horizontalAxis,
+        Defaults.verticalAxis,
+      ],
+    );
+  }
+}
 
-          // The result will be null, if the user aborted the dialog
-          if(result != null) {
-            File file = File(result.files.first.path!);
-          }
-        },
-      )
+class HistoricEnergyUseExplainer extends StatelessWidget {
+  const HistoricEnergyUseExplainer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Theme.of(context).dialogBackgroundColor,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'What is your historic energy use?',
+              textAlign: TextAlign.left,
+              textScaleFactor: 2,
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'Run your appliances when electricity rates are low.',
+              textAlign: TextAlign.left,
+              textScaleFactor: 1,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: MaterialButton(
+              child: const Text('Load data from file'),
+              onPressed: () async {
+                FilePickerResult? result = await FilePicker.platform.pickFiles(
+                    type: FileType.custom, allowedExtensions: ['csv']);
+
+                // The result will be null, if the user aborted the dialog
+                if (result != null) {
+                  File file = File(result.files.first.path!);
+                  final history = HistoricEnergyUse.fromComEdCsvFile(file);
+                  print(history.readings[0]);
+                }
+              },
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'This chart shows the average hourly energy use from your Green Button Download.',
+              textAlign: TextAlign.left,
+              textScaleFactor: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A button which toggles a model bottom sheet containing HistoricEnergyUseExplainer
+class HistoricEnergyUseExplainerButton extends StatelessWidget {
+  const HistoricEnergyUseExplainerButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      child: const Icon(Icons.question_mark),
+      onPressed: () {
+        showModalBottomSheet<void>(
+          context: context,
+          builder: (BuildContext context) {
+            return const HistoricEnergyUseExplainer();
+          },
+        );
+      },
     );
   }
 }
