@@ -39,40 +39,44 @@ String _dateWithZeros(DateTime date) {
   return str;
 }
 
-/// Reduce and EnergyRate into bins of the requested size
-List<double> getAverageRates(EnergyRates energyRates, int minutesPerBin) {
-  const int minutesPerHour = 60;
-  const int minutesPerDay = minutesPerHour * 24;
-  assert(minutesPerBin >= 5);
-  assert(minutesPerBin <= minutesPerHour);
-  while (minutesPerHour ~/ minutesPerBin != minutesPerHour / minutesPerBin) {
-    minutesPerBin -= 1;
+/// Rounds the given [date] to the hour's end
+///
+/// Year, month, and day are the same. Increase the hour if the minute is
+/// greater than 0.
+DateTime _convertToHourEnd(DateTime date) {
+  if (date.minute > 0) {
+    date = date.add(const Duration(hours: 1));
   }
-  final int numBins = minutesPerDay ~/ minutesPerBin;
+  return DateTime(date.year, date.month, date.day, date.hour);
+}
 
-  List<double> averageRates = List<double>.filled(numBins, 0);
-  List<int> counts = List<int>.filled(numBins, 0);
+/// Reduces 5 minute rates to average hourly rates
+CentPerEnergyRates getAverageRates(CentPerEnergyRates energyRates) {
+  Map<DateTime, List<double>> rates = {};
 
   for (int i = 0; i < energyRates.rates.length; i++) {
-    int index =
-        (energyRates.dates[i].minute + energyRates.dates[i].hour * 60) ~/
-            minutesPerBin;
-    counts[index] += 1;
-    averageRates[index] += energyRates.rates[i];
+    final DateTime key = _convertToHourEnd(energyRates.dates[i]);
+    List<double> pair = rates.putIfAbsent(key, () => [0, 0]);
+    rates[key] = [pair[0] + energyRates.rates[i], pair[1] + 1];
   }
-  for (int i = 0; i < numBins; i++) {
-    if (counts[i] > 0) {
-      averageRates[i] /= counts[i];
-    }
-  }
-  return averageRates;
+  rates.forEach((key, value) {
+    rates[key] = [value[0] / value[1]];
+  });
+
+  final sortedRates = rates.entries.toList()
+    ..sort((a, b) => a.key.compareTo(b.key));
+
+  return CentPerEnergyRates(
+    dates: sortedRates.map((x) => x.key).toList(),
+    rates: sortedRates.map((x) => x.value[0]).toList(),
+  );
 }
 
 /// Returns the 5-minute rates from the days in range (start, end].
 ///
 /// Prices are period-ending, so to get prices for today the range would be from
 /// yesterday to today.
-Future<CentPerEnergyRates> fetchRatesDayRange(
+Future<CentPerEnergyRates> fetchFiveMinRatesDayRange(
     DateTime start, DateTime end) async {
   final response = await http.get(Uri.parse(
       'https://hourlypricing.comed.com/api?type=5minutefeed&format=json'
