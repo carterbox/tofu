@@ -15,6 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 /// Fetch electricity rate data from ComEd REST API.
+///
+/// Note that in accordance to the COMED API, all prices are label with period
+/// ending. i.e. If you ask for the 5 minute price at 10:00 pm, then the price
+/// is for the period from 9:55 pm to 10:00 pm. If you ask for the hourly price
+/// at 1:00 pm, the price is the average from 12:00 pm to 1:00 pm.
 
 import 'dart:async';
 import 'dart:convert';
@@ -63,23 +68,26 @@ List<double> getAverageRates(EnergyRates energyRates, int minutesPerBin) {
   return averageRates;
 }
 
-/// Trim energy rates to exactly 24 hours in the future future
-List<double> getStrictHourRates(EnergyRates x) {
-  // Rates are provided as hour ending, so we convert now into the end of hour
-  final now = DateTime.now();
-  final firstHour = now.add(const Duration(hours: 0));
-  final finalHour = now.add(const Duration(hours: 24));
-  var windowedRates = List<double>.filled(24, double.nan, growable: false);
-  for (int i = 0; i < x.rates.length; i++) {
-    final date = x.dates[i];
-    final rate = x.rates[i];
-    if (date.isAfter(firstHour) && date.isBefore(finalHour)) {
-      windowedRates[date.hour] = rate;
-    }
+/// Returns the 5-minute rates from the days in range (start, end].
+///
+/// Prices are period-ending, so to get prices for today the range would be from
+/// yesterday to today.
+Future<CentPerEnergyRates> fetchRatesDayRange(
+    DateTime start, DateTime end) async {
+  final response = await http.get(Uri.parse(
+      'https://hourlypricing.comed.com/api?type=5minutefeed&format=json'
+      '&datestart=${_dateWithZeros(start.add(const Duration(days: 1)))}0001'
+      '&dateend=${_dateWithZeros(end.add(const Duration(days: 1)))}0000'));
+  if (response.statusCode == 200) {
+    return CentPerEnergyRates.fromJson(jsonDecode(response.body));
+  } else {
+    throw Exception('Failed to load rates from $start to $end.');
   }
-  return windowedRates;
 }
 
+/// Returns the hour-average rate for the current hour.
+///
+/// Updated every 5 minutes.
 Future<double> fetchCurrentHourAverage() async {
   final response = await http.get(
       Uri.parse('https://hourlypricing.comed.com/api?type=currenthouraverage'));
@@ -88,33 +96,6 @@ Future<double> fetchCurrentHourAverage() async {
     return double.parse(x[0]['price']);
   } else {
     throw Exception('Failed to get current hour average.');
-  }
-}
-
-/// Returns the 5-minute rates from the past 24 Hours.
-Future<CentPerEnergyRates> fetchRatesLast24Hours() async {
-  final response = await http.get(Uri.parse(
-      'https://hourlypricing.comed.com/api?type=5minutefeed&format=json'));
-  if (response.statusCode == 200) {
-    return CentPerEnergyRates.fromJson(jsonDecode(response.body));
-  } else {
-    throw Exception('Failed to load rates from last 24 hours.');
-  }
-}
-
-/// Returns the real hourly rates from the past 24 Hours.
-Future<CentPerEnergyRates> fetchRatesLastDay() async {
-  final today = DateTime.now();
-  final response1 = await http.get(Uri.parse(
-      'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(today)}'));
-  final yesterday = today.subtract(const Duration(days: 1));
-  final response0 = await http.get(Uri.parse(
-      'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(yesterday)}'));
-  if (response0.statusCode == 200 && response1.statusCode == 200) {
-    return CentPerEnergyRates.fromJavaScriptText(
-        response0.body + response1.body);
-  } else {
-    throw Exception('Failed to load rates from last 24 hours.');
   }
 }
 
@@ -396,7 +377,7 @@ class PriceClockExplainer extends StatelessWidget {
               textScaleFactor: 1,
             ),
           ),
-            Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
               'This chart shows the current and forecasted hourly average electricity prices for as much of the next 24 hours as possible in the Chicagoland ComEd energy market.',

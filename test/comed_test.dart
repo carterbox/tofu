@@ -21,9 +21,6 @@ void main() {
   test('Check fetchRatesNextDay', () async {
     print((await fetchRatesNextDay()).rates);
   });
-  test('Check fetchRatesLastDay', () async {
-    print((await fetchRatesLastDay()).rates);
-  });
   test('Check getStrictHourRates', () async {
     final unstrictRates = (await fetchRatesNextDay());
     final rates = getStrictHourRates(unstrictRates);
