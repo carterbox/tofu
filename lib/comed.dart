@@ -24,6 +24,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:http/http.dart' as http;
@@ -50,33 +51,11 @@ DateTime _convertToHourEnd(DateTime date) {
   return DateTime(date.year, date.month, date.day, date.hour);
 }
 
-/// Reduces 5 minute rates to average hourly rates
-CentPerEnergyRates getAverageRates(CentPerEnergyRates energyRates) {
-  Map<DateTime, List<double>> rates = {};
-
-  for (int i = 0; i < energyRates.rates.length; i++) {
-    final DateTime key = _convertToHourEnd(energyRates.dates[i]);
-    List<double> pair = rates.putIfAbsent(key, () => [0, 0]);
-    rates[key] = [pair[0] + energyRates.rates[i], pair[1] + 1];
-  }
-  rates.forEach((key, value) {
-    rates[key] = [value[0] / value[1]];
-  });
-
-  final sortedRates = rates.entries.toList()
-    ..sort((a, b) => a.key.compareTo(b.key));
-
-  return CentPerEnergyRates(
-    dates: sortedRates.map((x) => x.key).toList(),
-    rates: sortedRates.map((x) => x.value[0]).toList(),
-  );
-}
-
 /// Returns the 5-minute rates from the days in range (start, end].
 ///
 /// Prices are period-ending, so to get prices for today the range would be from
 /// yesterday to today.
-Future<CentPerEnergyRates> fetchFiveMinRatesDayRange(
+Future<CentPerEnergyRates> fetchHistoricHourlyRatesDayRange(
     DateTime start, DateTime end) async {
   final response = await http.get(Uri.parse(
       'https://hourlypricing.comed.com/api?type=5minutefeed&format=json'
@@ -124,7 +103,7 @@ Future<CentPerEnergyRates> fetchRatesNextDay() async {
 }
 
 class EnergyRatesUpdate {
-  final EnergyRates forecast;
+  final HourlyEnergyRates forecast;
   final double currentHour;
 
   const EnergyRatesUpdate({
@@ -136,7 +115,7 @@ class EnergyRatesUpdate {
 Stream<EnergyRatesUpdate> streamRatesNextDay() async* {
   final randomInt = Random();
   DateTime lastUpdate = DateTime(0);
-  EnergyRates? forecast;
+  HourlyEnergyRates? forecast;
   while (true) {
     try {
       if (DateTime.now().hour != lastUpdate.hour ||
@@ -161,13 +140,11 @@ Stream<EnergyRatesUpdate> streamRatesNextDay() async* {
   }
 }
 
-/// A collection of energy rates over time.
-abstract class EnergyRates {
+/// A collection of hourly energy rates over time.
+@immutable
+abstract class HourlyEnergyRates {
   /// Times corresponding the end of period for each of the [rates].
-  final List<DateTime> dates;
-
-  /// The number of [units] per kwh
-  final List<double> rates;
+  final Map<DateTime, double> rates;
 
   /// The unit of measure for the [rates].
   String get units;
@@ -178,33 +155,29 @@ abstract class EnergyRates {
   /// Above this value is a middle rate of [units] per kWh
   double get rateMidThreshold;
 
-  const EnergyRates({
-    required this.dates,
+  const HourlyEnergyRates({
     required this.rates,
   });
 
   /// Provides hours location of min, max, and median rates
-  List<bool> getHighlights() {
-    final finiteRates = rates.where((x) => x.isFinite);
-    var highlights = List<bool>.filled(rates.length, false, growable: false);
+  List<double> getHighlights() {
+    var finiteRates = Map<DateTime, double>.of(rates);
+    finiteRates.removeWhere((key, value) => !(value.isFinite));
 
-    final double priceMax = finiteRates.reduce(max);
-    highlights[rates.indexOf(priceMax)] = true;
-
-    final double priceMin = finiteRates.reduce(min);
-    highlights[rates.indexOf(priceMin)] = true;
-
-    var ratesSorted = finiteRates.toList().sublist(0, finiteRates.length);
+    var ratesSorted = finiteRates.values.toList();
     ratesSorted.sort();
-    final priceMedian = ratesSorted[finiteRates.length ~/ 2];
-    highlights[rates.indexOf(priceMedian)] = true;
 
-    return highlights;
+    return [
+      ratesSorted[0],
+      ratesSorted[finiteRates.length ~/ 2],
+      ratesSorted[finiteRates.length - 1],
+    ];
   }
 }
 
 /// A collection of US dollar cents per kWh across multiple periods.
-class CentPerEnergyRates extends EnergyRates {
+@immutable
+class CentPerEnergyRates extends HourlyEnergyRates {
   @override
   final String units = '\u00A2';
   @override
@@ -213,20 +186,29 @@ class CentPerEnergyRates extends EnergyRates {
   final double rateMidThreshold = 7.5;
 
   const CentPerEnergyRates({
-    required super.dates,
     required super.rates,
   });
 
   /// Construct from json like this: [{"millisUTC":"1665944400000","price":"3.0"}, ...]
   factory CentPerEnergyRates.fromJson(List<dynamic> json) {
+    Map<DateTime, List<double>> rates = {};
+
+    for (final x in json) {
+      final date = _convertToHourEnd(DateTime.fromMillisecondsSinceEpoch(
+        int.parse(x['millisUTC']),
+        isUtc: true,
+      ).toLocal());
+
+      final price = double.parse(x['price']);
+
+      var prices = rates.putIfAbsent(date, () => []);
+      prices.add(price);
+    }
+
     return CentPerEnergyRates(
-      dates: json
-          .map((x) => DateTime.fromMillisecondsSinceEpoch(
-                int.parse(x['millisUTC']),
-                isUtc: true,
-              ).toLocal())
-          .toList(),
-      rates: json.map((x) => double.parse(x['price'])).toList(),
+      rates: rates.map<DateTime, double>((key, value) {
+        return MapEntry(key, value.average);
+      }),
     );
   }
 
@@ -235,64 +217,65 @@ class CentPerEnergyRates extends EnergyRates {
   /// JavaScript uses 0 indexed month, but Dart uses 1 indexed month, so we have
   /// to correct for that.
   factory CentPerEnergyRates.fromJavaScriptText(String text) {
+    Map<DateTime, List<double>> rates = {};
+
     // Replace the constructor in the string
     final regex = RegExp(r'[0-9]+\.?[0-9]*');
     final numbers =
         regex.allMatches(text).map((x) => x[0]!).toList(growable: false);
-    var dates = List<DateTime>.empty(growable: true);
-    var rates = List<double>.empty(growable: true);
+
     for (var i = 0; i < numbers.length; i += 7) {
-      dates.add(DateTime(
+      final date = _convertToHourEnd(DateTime(
         int.parse(numbers[i]), // year
         int.parse(numbers[i + 1]) + 1, // month
         int.parse(numbers[i + 2]), // day
         int.parse(numbers[i + 3]), // hour
-        int.parse(numbers[i + 4]),
-        int.parse(numbers[i + 5]),
+        int.parse(numbers[i + 4]), // minute
+        int.parse(numbers[i + 5]), // second
       ));
-      rates.add(double.parse(numbers[i + 6]));
+      final price = double.parse(numbers[i + 6]);
+
+      var prices = rates.putIfAbsent(date, () => []);
+      prices.add(price);
     }
+
     return CentPerEnergyRates(
-      dates: dates,
-      rates: rates,
+      rates: rates.map<DateTime, double>((key, value) {
+        return MapEntry(key, value.average);
+      }),
     );
   }
 
   /// Trim energy rates to exactly 24 hours in the future
   CentPerEnergyRates toExactly24Hours() {
-    // Rates are provided as hour ending, so we convert now into the end of hour
-    final now = DateTime.now();
-    final firstHour = now.add(const Duration(hours: 0));
-    final finalHour = now.add(const Duration(hours: 24));
-    var windowedRates = List<double>.filled(24, double.nan, growable: false);
-    var windowedDates = List<DateTime>.filled(24, DateTime(0), growable: false);
-    for (int i = 0; i < rates.length; i++) {
-      final date = dates[i];
-      final rate = rates[i];
-      if (date.isAfter(firstHour) && date.isBefore(finalHour)) {
-        windowedRates[date.hour] = rate;
-        windowedDates[date.hour] = date;
+    Map<DateTime, double> rates = {};
+
+    final firstHour = _convertToHourEnd(DateTime.now());
+
+    for (int i = 0; i < 24; i++) {
+      final thisHour = firstHour.add(Duration(hours: i));
+      if (this.rates.containsKey(thisHour)) {
+        rates[thisHour] = this.rates[thisHour]!;
       }
     }
+
     return CentPerEnergyRates(
-      rates: windowedRates,
-      dates: windowedDates,
+      rates: rates,
     );
   }
 
-  /// Concatenate another [CentPerEnergyRates] to this one.
-  CentPerEnergyRates operator +(CentPerEnergyRates other) {
-    return CentPerEnergyRates(
-      dates: dates + other.dates,
-      rates: rates + other.rates,
-    );
+  @override
+  String toString() {
+    return rates.entries
+        .map((e) => '$e.value$units hour-ending $e.key')
+        .join('\n');
   }
 }
 
 /// A circular bar chart showing the current and forecasted energy rates for a
 /// 24 hour period
 class PriceClock extends StatelessWidget {
-  final EnergyRates energyRates;
+  final HourlyEnergyRates energyRates;
   final double radius;
   final double currentHourRate;
 
@@ -316,11 +299,13 @@ class PriceClock extends StatelessWidget {
       final double barHeightMaximum = (energyRates.rateHighThreshold * 1.1);
       var sections = List<chart.PieChartSectionData>.empty(growable: true);
       final isImportant = energyRates.getHighlights();
-      for (int hour = 0; hour < energyRates.rates.length; hour++) {
-        final bool isCurrentHour = (hour == (DateTime.now().hour + 1) % 24);
-        final double price = (isCurrentHour && currentHourRate.isFinite)
+      DateTime currentHour = _convertToHourEnd(DateTime.now());
+      for (int hour = 0; hour < 24; hour++) {
+        final bool isCurrentHour = (hour == 0);
+        final double price = isCurrentHour
             ? currentHourRate
-            : energyRates.rates[hour];
+            : energyRates.rates[currentHour.add(Duration(hours: hour))] ??
+                double.nan;
 
         double barHeight = price;
         if (price < 0.0) {
@@ -333,7 +318,8 @@ class PriceClock extends StatelessWidget {
         }
         sections.add(chart.PieChartSectionData(
           value: 1,
-          showTitle: price.isFinite && (isCurrentHour || isImportant[hour]),
+          showTitle:
+              price.isFinite && (isCurrentHour || isImportant.contains(price)),
           title: '${price.toStringAsFixed(1)}${energyRates.units}',
           radius: outerRadius * barHeight / barHeightMaximum,
           titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
@@ -346,7 +332,7 @@ class PriceClock extends StatelessWidget {
         chart.PieChartData(
           sections: sections,
           centerSpaceRadius: innerRadius,
-          startDegreeOffset: (360 / 24) * 5,
+          startDegreeOffset: (360 / 24) * 4,
         ),
       );
     });

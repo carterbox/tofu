@@ -5,32 +5,39 @@ void main() {
   test('Check EnergyRates from Text constructor', () {
     const String text =
         '[[Date.UTC(2022,9,16,0,0,0), 5.0], [Date.UTC(2022,9,16,23,0,0), 4.3], [Date.UTC(2022,9,16,1,0,0), 4.6], ]';
-    final EnergyRates nonempty = CentPerEnergyRates.fromJavaScriptText(text);
-    expect(nonempty.rates, [5.0, 4.3, 4.6]);
-    expect(nonempty.dates, [
-      DateTime(2022, 10, 16),
-      DateTime(2022, 10, 16, 23),
-      DateTime(2022, 10, 16, 1)
-    ]);
+    final HourlyEnergyRates nonempty =
+        CentPerEnergyRates.fromJavaScriptText(text);
+    print(nonempty.rates);
+    expect(nonempty.rates, {DateTime(2022, 10, 16): 5.0, DateTime(2022, 10, 16, 23): 4.3, DateTime(2022, 10, 16, 1): 4.6});
 
     const String text0 = '[]';
-    final EnergyRates empty = CentPerEnergyRates.fromJavaScriptText(text0);
-    expect(empty.rates, List<double>.empty());
-    expect(empty.dates, List<DateTime>.empty());
+    final HourlyEnergyRates empty =
+        CentPerEnergyRates.fromJavaScriptText(text0);
+    print(empty.rates);
+    expect(empty.rates, {});
   });
+
   test('Check fetchRatesNextDay', () async {
     print((await fetchRatesNextDay()).rates);
   });
-  test('Check getStrictHourRates', () async {
-    final unstrictRates = (await fetchRatesNextDay());
-    final rates = getStrictHourRates(unstrictRates);
-    expect(rates.length, 24);
-    print(rates);
-    print(unstrictRates.rates);
-  });
+
   test('Check fetchCurrentHourAverage', () async {
     final rate = (await fetchCurrentHourAverage());
     expect(rate >= 0, true);
     print(rate);
+  });
+
+  test('Check getHourlyAverages', () async {
+    final empty = await fetchHistoricHourlyRatesDayRange(
+      DateTime(2022, 10, 1),
+      DateTime(2022, 10, 1),
+    );
+    expect(empty.rates, {});
+
+    final singleDay = await fetchHistoricHourlyRatesDayRange(
+      DateTime(2022, 10, 1),
+      DateTime(2022, 10, 2),
+    );
+    expect(singleDay.rates.length, 24);
   });
 }
