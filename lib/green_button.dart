@@ -1,48 +1,56 @@
-import 'dart:io';
+// electricity_clock, an app for monitoring time-of-use electricity rates
+// Copyright (C) 2022 Daniel Jackson Ching
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/// Load and display electricity usage data from a greenbutton download.
+///
+/// Note that in accordance to the COMED API, all prices are label with period
+/// ending. i.e. If you ask for the 5 minute price at 10:00 pm, then the price
+/// is for the period from 9:55 pm to 10:00 pm. If you ask for the hourly price
+/// at 1:00 pm, the price is the average from 12:00 pm to 1:00 pm.
+
+import 'dart:io';
+import 'dart:math';
+
+import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:graphic/graphic.dart';
+import 'comed.dart';
 
-/// Represents measured energy use between [start] and [end] times
+/// A collection of hourly energy use over time.
 @immutable
-class EnergyUse {
-  static const String units = 'kWh';
+class HourlyEnergyUse {
+  final String units = 'kWh';
 
-  /// How much energy was used in kWh
-  final double usage;
+  final double rateHighThreshold = 1.0;
 
-  /// When the energy use period started
-  final DateTime start;
+  /// How much energy was used in [units]
+  final Map<DateTime, double> usage;
 
-  /// When the energy use period ended
-  final DateTime end;
-
-  EnergyUse({
+  const HourlyEnergyUse({
     required this.usage,
-    required this.start,
-    required this.end,
-  }) {
-    if (start.isAfter(end)) {
-      throw ArgumentError('The start of an EnergyUse cannot be after its end');
-    }
-  }
+  });
 
   @override
   String toString() {
-    return '$usage$units from $start until $end.';
+    return usage.entries
+        .map((e) => '${e.value.toStringAsFixed(3)}$units hour-ending ${e.key}')
+        .join('\n');
   }
-}
 
-/// A collection of [EnergyUse] across multiple time periods
-@immutable
-class HistoricEnergyUse {
-  /// A list of [EnergyUse]
-  final List<EnergyUse> readings;
-
-  const HistoricEnergyUse({required this.readings});
-
-  /// Construct a [HistoricEnergyUse] from a ComEd Green Button comma-separated
+  /// Construct a [HourlyEnergyUse] from a ComEd Green Button comma-separated
   /// file
   ///
   /// This CSV file has a header followed by column labels and then data. The
@@ -52,8 +60,8 @@ class HistoricEnergyUse {
   /// Electric usage,2022-12-01,00:00,00:29,0.16,kWh,$0.02,
   ///
   /// https://www.energy.gov/data/green-button
-  factory HistoricEnergyUse.fromComEdCsvFile(File file) {
-    List<EnergyUse> readings = [];
+  factory HourlyEnergyUse.fromComEdCsvFile(File file) {
+    Map<DateTime, double> usage = {};
 
     for (final line in file.readAsLinesSync()) {
       final tokens = line.split(',');
@@ -64,25 +72,15 @@ class HistoricEnergyUse {
         final int month = int.parse(date[1]);
         final int day = int.parse(date[2]);
 
-        var time = tokens[2].split(':');
-        final start =
-            DateTime(year, month, day, int.parse(time[0]), int.parse(time[1]));
+        final time = tokens[3].split(':');
+        final end = convertToHourEnd(
+            DateTime(year, month, day, int.parse(time[0]), int.parse(time[1])));
 
-        time = tokens[3].split(':');
-        final end =
-            DateTime(year, month, day, int.parse(time[0]), int.parse(time[1]));
-
-        final usage = double.parse(tokens[4]);
-
-        readings.add(EnergyUse(usage: usage, start: start, end: end));
+        usage[end] = (usage[end] ?? 0) + double.parse(tokens[4]);
       }
     }
 
-    readings.sort((a, b) {
-      return a.start.compareTo(b.start);
-    });
-
-    return HistoricEnergyUse(readings: readings);
+    return HourlyEnergyUse(usage: usage);
   }
 
   /// Return 24 averaged hour-ending readings
@@ -90,112 +88,95 @@ class HistoricEnergyUse {
     var totals = List<double>.filled(24, 0.0, growable: false);
     var counts = List<double>.filled(24, 0.0, growable: false);
 
-    for (final reading in readings) {
-      int hour = (reading.start.hour + 1) % 24;
-      totals[hour] += reading.usage;
-      counts[hour] += 0.5;
+    for (final reading in usage.entries) {
+      final hour = reading.key.hour;
+      totals[hour] += reading.value;
+      counts[hour] += 1;
     }
 
     return [for (var i = 0; i < totals.length; ++i) totals[i] / counts[i]];
   }
 
-  HistoricEnergyUse filterByWeekday(List<int> weekdays) {
-    return HistoricEnergyUse(
-      readings: readings
-          .where((element) => weekdays.contains(element.end.weekday))
-          .toList(growable: false),
+  HourlyEnergyUse filterByWeekday(List<int> weekdays) {
+    final filteredUsage = Map.of(usage);
+    filteredUsage.removeWhere((key, value) => !weekdays.contains(key.weekday));
+    return HourlyEnergyUse(
+      usage: filteredUsage,
     );
   }
 
-  HistoricEnergyUse filterByMonth(List<int> months) {
-    return HistoricEnergyUse(
-      readings: readings
-          .where((element) => months.contains(element.end.month))
-          .toList(growable: false),
+  HourlyEnergyUse filterByMonth(List<int> months) {
+    final filteredUsage = Map.of(usage);
+    filteredUsage.removeWhere((key, value) => !months.contains(key.month));
+    return HourlyEnergyUse(
+      usage: filteredUsage,
     );
   }
 
-  HistoricEnergyUse filterByDate(DateTime start, DateTime end) {
-    return HistoricEnergyUse(
-      readings: readings
-          .where((element) =>
-              element.start.compareTo(start) >= 0 &&
-              element.end.compareTo(end) < 0)
-          .toList(growable: false),
+  HourlyEnergyUse filterByDate(DateTime start, DateTime end) {
+    final filteredUsage = Map.of(usage);
+    filteredUsage.removeWhere(
+        (key, value) => key.compareTo(start) <= 0 || key.compareTo(end) > 0);
+    return HourlyEnergyUse(
+      usage: filteredUsage,
     );
   }
 }
 
 class HistoricEnergyUseClock extends StatelessWidget {
-  const HistoricEnergyUseClock(this.historicEnergyUse, {super.key});
+  final HourlyEnergyUse historicEnergyUse;
+  final double radius;
 
-  final HistoricEnergyUse historicEnergyUse;
+  const HistoricEnergyUseClock({
+    super.key,
+    required this.historicEnergyUse,
+    this.radius = 1.0,
+  });
 
   @override
   Widget build(BuildContext context) {
-    List<Map> dataSets = [];
-    const colors = [
-      Colors.red,
-      Colors.blue,
-      Colors.orange,
-      Colors.yellow,
-      Colors.green,
-      Colors.indigo,
-      Colors.purple
-    ];
-    const labels = [
-      'Weekdays',
-      'Weekends',
-    ];
-    const groups = [
-      [
-        DateTime.monday,
-        DateTime.tuesday,
-        DateTime.wednesday,
-        DateTime.thursday,
-        DateTime.friday,
-      ],
-      [
-        DateTime.saturday,
-        DateTime.sunday,
-      ],
-    ];
-    for (int i = 0; i < groups.length; i++) {
-      final groupHistoricUse =
-          historicEnergyUse.filterByWeekday(groups[i]).hourlyAverages();
+    return LayoutBuilder(builder: (context, constraints) {
+      final double diameter =
+          0.5 * min(constraints.maxHeight, constraints.maxWidth);
+
+      final innerRadius = diameter * radius * 0.25;
+      final outerRadius = diameter * radius * 0.75;
+
+      final theme = Theme.of(context);
+      final double barHeightMaximum =
+          (historicEnergyUse.rateHighThreshold * 1.1);
+      var sections = List<chart.PieChartSectionData>.empty(growable: true);
+      // final isImportant = historicEnergyUse.getHighlights();
+      final usage = historicEnergyUse.hourlyAverages();
       for (int hour = 0; hour < 24; hour++) {
-        dataSets.add(
-            {'day': i, 'usage': groupHistoricUse[hour], 'hour': hour});
+        final double price = usage[hour];
+
+        double barHeight = price;
+        if (price < 0.0) {
+          // Large negative bars look really bad.
+          barHeight = -1.0;
+        }
+        if (price == 0.0 || !price.isFinite) {
+          // Chart cannot render a zero height bar.
+          barHeight = 0.001;
+        }
+        sections.add(chart.PieChartSectionData(
+          value: 1,
+          showTitle: price.isFinite, // && isImportant.contains(price),
+          title: '${price.toStringAsFixed(1)}${historicEnergyUse.units}',
+          radius: outerRadius * barHeight / barHeightMaximum,
+          titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
+          color: theme.colorScheme.primary,
+        ));
       }
-    }
-    return Chart(
-      data: dataSets,
-      variables: {
-        'hour': Variable(
-          accessor: (Map map) => map['hour'] as num,
+      return chart.PieChart(
+        chart.PieChartData(
+          sections: sections,
+          centerSpaceRadius: innerRadius,
+          startDegreeOffset: (360 / 24) * 4,
         ),
-        'usage': Variable(
-          accessor: (Map map) => map['usage'] as num,
-        ),
-        'day': Variable(
-          accessor: (Map map) => map['day'] as num,
-        ),
-      },
-      elements: [
-        IntervalElement(
-          position:
-              Varset('hour') * Varset('usage') / Varset('day'),
-          color: ColorAttr(
-              variable: 'day', values: Defaults.colors10),
-          size: SizeAttr(value: 2),
-          modifiers: [DodgeModifier(ratio: 0.1)],
-        )
-      ],
-      axes: [
-        Defaults.horizontalAxis,
-        Defaults.verticalAxis,
-      ],
-    );
+      );
+    });
   }
 }
 
@@ -238,8 +219,8 @@ class HistoricEnergyUseExplainer extends StatelessWidget {
                 // The result will be null, if the user aborted the dialog
                 if (result != null) {
                   File file = File(result.files.first.path!);
-                  final history = HistoricEnergyUse.fromComEdCsvFile(file);
-                  print(history.readings[0]);
+                  final history = HourlyEnergyUse.fromComEdCsvFile(file);
+                  print(history.usage[0]);
                 }
               },
             ),
