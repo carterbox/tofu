@@ -58,7 +58,7 @@ dependencies:
   fl_chart: ^0.62.0
   http: ^0.13.5
   intl: ^0.17.0
-  logging: ^1.1.1
+  logging: ^1.2.0
   flutter_launcher_icons: ^0.13.1
   sunrise_sunset_calc: ^3.0.0
   dynamic_color: ^1.6.3
