@@ -171,9 +171,6 @@ class HistoricEnergyUsePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final historicEnergyUse = File(
-        '/home/dching/Documents/tofu/test/cec_electric_interval_data_Service1_2022-12-01_to_2023-02-07.csv');
-    print(historicEnergyUse.readAsLinesSync());
     return Scaffold(
       appBar: AppBar(
         title: Text(title),

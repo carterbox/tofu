@@ -52,21 +52,58 @@ DateTime convertToHourEnd(DateTime date) {
   return DateTime(date.year, date.month, date.day, date.hour);
 }
 
+/// Rounds the given [date] to the day's end
+///
+/// Year, month are the same. Increase the hour if the minute is
+/// greater than 0.
+DateTime convertToDayEnd(DateTime date) {
+  date = convertToHourEnd(date);
+  if (date.hour > 0) {
+    date = date.add(const Duration(days: 1));
+  }
+  return DateTime(date.year, date.month, date.day);
+}
+
 /// Returns the 5-minute rates from the days in range (start, end].
 ///
 /// Prices are period-ending, so to get prices for today the range would be from
 /// (the end of) yesterday to (the end of) today.
 Future<CentPerEnergyRates> fetchHistoricHourlyRatesDayRange(
-    DateTime start, DateTime end) async {
-  final response = await http.get(Uri.parse(
-      'https://hourlypricing.comed.com/api?type=5minutefeed&format=json'
-      '&datestart=${_dateWithZeros(start.add(const Duration(days: 1)))}0001'
-      '&dateend=${_dateWithZeros(end.add(const Duration(days: 1)))}0000'));
-  if (response.statusCode == 200) {
-    return CentPerEnergyRates.fromJson(jsonDecode(response.body));
-  } else {
-    throw Exception('Failed to load rates from $start to $end.');
+  DateTime start,
+  DateTime end,
+) async {
+  start = convertToDayEnd(start);
+  end = convertToDayEnd(end);
+
+  if (start.isBefore(end)) {
+
+    List<DateTime> dates = [end];
+    while (dates.last.isAfter(start)) {
+      dates.add(dates.last.subtract(const Duration(days: 1)));
+    }
+
+    final List<http.Response> responses = await Future.wait(dates.map(
+      (date) {
+        return http.get(Uri.parse(
+            'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(date)}'));
+      },
+    ));
+
+    final String texts = responses.map(
+      (response) {
+        if (response.statusCode == 200) {
+          return response.body;
+        } else {
+          throw Exception(
+              'Failed to retrieve historic rates on a day in range $start to $end.');
+        }
+      },
+    ).join();
+
+    return CentPerEnergyRates.fromJavaScriptText(texts);
   }
+
+  return const CentPerEnergyRates(rates: {});
 }
 
 /// Returns the hour-average rate for the current hour.

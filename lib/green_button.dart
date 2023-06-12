@@ -23,11 +23,18 @@
 
 import 'dart:io';
 import 'dart:math';
+import 'dart:convert';
 
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'comed.dart';
+
+import 'package:flutter/services.dart' show rootBundle;
+
+Future<String> loadPlaceholderGreenbutton() async {
+  return await rootBundle.loadString('assets/data/greenbutton-placeholder.csv');
+}
 
 /// A collection of hourly energy use over time.
 @immutable
@@ -50,6 +57,25 @@ class HourlyEnergyUse {
         .join('\n');
   }
 
+  /// Return the day ending before and last containing the usage
+  List<DateTime> getDateRange() {
+    List<DateTime> dates = usage.keys.toList(growable: false);
+    DateTime lo = dates[0];
+    DateTime hi = dates[0];
+    for (final date in dates) {
+      if (date.isBefore(lo)) {
+        lo = date;
+      }
+      if (date.isAfter(hi)) {
+        hi = date;
+      }
+    }
+    return [
+      DateTime(lo.year, lo.month, lo.day).subtract(const Duration(days: 1)),
+      DateTime(hi.year, hi.month, hi.day),
+    ];
+  }
+
   /// Construct a [HourlyEnergyUse] from a ComEd Green Button comma-separated
   /// file
   ///
@@ -64,6 +90,40 @@ class HourlyEnergyUse {
     Map<DateTime, double> usage = {};
 
     for (final line in file.readAsLinesSync()) {
+      final tokens = line.split(',');
+
+      if (tokens[0] == 'Electric usage') {
+        final date = tokens[1].split('-');
+        final int year = int.parse(date[0]);
+        final int month = int.parse(date[1]);
+        final int day = int.parse(date[2]);
+
+        final time = tokens[3].split(':');
+        final end = convertToHourEnd(
+            DateTime(year, month, day, int.parse(time[0]), int.parse(time[1])));
+
+        usage[end] = (usage[end] ?? 0) + double.parse(tokens[4]);
+      }
+    }
+
+    return HourlyEnergyUse(usage: usage);
+  }
+
+  /// Construct a [HourlyEnergyUse] from a ComEd Green Button comma-separated
+  /// file
+  ///
+  /// This CSV file has a header followed by column labels and then data. The
+  /// headers and example first row are as follows:
+  ///
+  /// TYPE,DATE,START TIME,END TIME,USAGE,UNITS,COST,NOTES
+  /// Electric usage,2022-12-01,00:00,00:29,0.16,kWh,$0.02,
+  ///
+  /// https://www.energy.gov/data/green-button
+  factory HourlyEnergyUse.fromComEdCsvString(String file) {
+    Map<DateTime, double> usage = {};
+    const splitter = LineSplitter();
+
+    for (final line in splitter.convert(file)) {
       final tokens = line.split(',');
 
       if (tokens[0] == 'Electric usage') {
