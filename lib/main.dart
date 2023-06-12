@@ -147,11 +147,11 @@ class HourlyEnergyRatesPage extends StatelessWidget {
                 flex: 13,
                 child: PriceClockExplainer(),
               ),
-            Expanded(
+            const Expanded(
               flex: 21,
               child: Stack(
                 alignment: Alignment.center,
-                children: const [
+                children: [
                   StreamingSolarCircle(),
                   StreamingPriceClock(),
                 ],
@@ -176,8 +176,7 @@ class HistoricEnergyUsePage extends StatelessWidget {
         title: Text(title),
       ),
       drawer: const NavigationDrawer(1),
-      // body: HistoricEnergyUseClock(historicEnergyUse: historicEnergyUse,),
-      body: Placeholder(),
+      body: const HistoricEnergyUseClock(),
       floatingActionButton: const HistoricEnergyUseExplainerButton(),
     );
   }

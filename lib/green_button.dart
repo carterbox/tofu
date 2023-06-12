@@ -76,6 +76,24 @@ class HourlyEnergyUse {
     ];
   }
 
+  factory HourlyEnergyUse.placeholder() {
+    Map<DateTime, double> usage = {
+      DateTime(2023, 1, 1, 01): 0.15,
+      DateTime(2023, 1, 1, 02): 0.2,
+      DateTime(2023, 1, 1, 03): 0.1,
+      DateTime(2023, 1, 1, 04): 0.3,
+      DateTime(2023, 1, 1, 05): 0.15,
+      DateTime(2023, 1, 1, 06): 0.4,
+      DateTime(2023, 1, 1, 07): 0.3,
+      DateTime(2023, 1, 1, 08): 0.2,
+      DateTime(2023, 1, 1, 09): 0.15,
+      DateTime(2023, 1, 1, 10): 0.5,
+      DateTime(2023, 1, 1, 11): 0.2,
+      DateTime(2023, 1, 1, 12): 0.15,
+    };
+    return HourlyEnergyUse(usage: usage);
+  }
+
   /// Construct a [HourlyEnergyUse] from a ComEd Green Button comma-separated
   /// file
   ///
@@ -183,60 +201,99 @@ class HourlyEnergyUse {
   }
 }
 
-class HistoricEnergyUseClock extends StatelessWidget {
-  final HourlyEnergyUse historicEnergyUse;
+/// Provides min, median, and max rates in that order
+List<double> getHighlights(List<double> values) {
+  var ratesSorted = values.toList();
+  ratesSorted.removeWhere((element) => !(element.isFinite));
+  ratesSorted.sort();
+  return [
+    ratesSorted[0],
+    ratesSorted[ratesSorted.length ~/ 2],
+    ratesSorted[ratesSorted.length - 1],
+  ];
+}
+
+enum Weekdays{Noneday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday}
+
+class HistoricEnergyUseClock extends StatefulWidget {
   final double radius;
 
   const HistoricEnergyUseClock({
     super.key,
-    required this.historicEnergyUse,
     this.radius = 1.0,
   });
 
   @override
+  HistoricEnergyUseClockState createState() => HistoricEnergyUseClockState();
+}
+
+class HistoricEnergyUseClockState extends State<HistoricEnergyUseClock> {
+  HourlyEnergyUse? historicEnergyUse;
+
+  @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final double diameter =
-          0.5 * min(constraints.maxHeight, constraints.maxWidth);
+    if (historicEnergyUse != null) {
+      return LayoutBuilder(builder: (context, constraints) {
+        final double diameter =
+            0.5 * min(constraints.maxHeight, constraints.maxWidth);
 
-      final innerRadius = diameter * radius * 0.25;
-      final outerRadius = diameter * radius * 0.75;
+        final innerRadius = diameter * widget.radius * 0.25;
+        final outerRadius = diameter * widget.radius * 0.75;
 
-      final theme = Theme.of(context);
-      final double barHeightMaximum =
-          (historicEnergyUse.rateHighThreshold * 1.1);
-      var sections = List<chart.PieChartSectionData>.empty(growable: true);
-      // final isImportant = historicEnergyUse.getHighlights();
-      final usage = historicEnergyUse.hourlyAverages();
-      for (int hour = 0; hour < 24; hour++) {
-        final double price = usage[hour];
+        final theme = Theme.of(context);
+        final double barHeightMaximum =
+            (historicEnergyUse!.rateHighThreshold * 1.1);
+        var sections = List<chart.PieChartSectionData>.empty(growable: true);
+        final usage = historicEnergyUse!.hourlyAverages();
+        final isImportant = getHighlights(usage);
+        for (int hour = 0; hour < 24; hour++) {
+          final double price = usage[hour];
 
-        double barHeight = price;
-        if (price < 0.0) {
-          // Large negative bars look really bad.
-          barHeight = -1.0;
+          double barHeight = price;
+          if (price < 0.0) {
+            // Large negative bars look really bad.
+            barHeight = -1.0;
+          }
+          if (price == 0.0 || !price.isFinite) {
+            // Chart cannot render a zero height bar.
+            barHeight = 0.001;
+          }
+          sections.add(chart.PieChartSectionData(
+            value: 1,
+            showTitle: price.isFinite && isImportant.contains(price),
+            title: '${price.toStringAsFixed(1)}${historicEnergyUse!.units}',
+            radius: outerRadius * barHeight / barHeightMaximum,
+            titlePositionPercentageOffset:
+                1 + 0.1 * barHeightMaximum / barHeight,
+            color: theme.colorScheme.primary,
+          ));
         }
-        if (price == 0.0 || !price.isFinite) {
-          // Chart cannot render a zero height bar.
-          barHeight = 0.001;
-        }
-        sections.add(chart.PieChartSectionData(
-          value: 1,
-          showTitle: price.isFinite, // && isImportant.contains(price),
-          title: '${price.toStringAsFixed(1)}${historicEnergyUse.units}',
-          radius: outerRadius * barHeight / barHeightMaximum,
-          titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
-          color: theme.colorScheme.primary,
-        ));
-      }
-      return chart.PieChart(
-        chart.PieChartData(
-          sections: sections,
-          centerSpaceRadius: innerRadius,
-          startDegreeOffset: (360 / 24) * 4,
-        ),
-      );
-    });
+         return  chart.PieChart(
+              chart.PieChartData(
+                sections: sections,
+                centerSpaceRadius: innerRadius,
+                startDegreeOffset: (360 / 24) * 5,
+              ),
+            );
+      });
+    }
+    return Center(
+      child: ElevatedButton(
+        child: const Text('Load your usage data'),
+        onPressed: () async {
+          FilePickerResult? result = await FilePicker.platform
+              .pickFiles(type: FileType.custom, allowedExtensions: ['csv']);
+
+          // The result will be null, if the user aborted the dialog
+          if (result != null) {
+            setState(() {
+              File file = File(result.files.first.path!);
+              historicEnergyUse = HourlyEnergyUse.fromComEdCsvFile(file);
+            });
+          }
+        },
+      ),
+    );
   }
 }
 
@@ -248,11 +305,11 @@ class HistoricEnergyUseExplainer extends StatelessWidget {
     return Container(
       color: Theme.of(context).dialogBackgroundColor,
       padding: const EdgeInsets.all(20),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
               'What is your historic energy use?',
@@ -260,7 +317,7 @@ class HistoricEnergyUseExplainer extends StatelessWidget {
               textScaleFactor: 2,
             ),
           ),
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
               'Run your appliances when electricity rates are low.',
@@ -269,23 +326,6 @@ class HistoricEnergyUseExplainer extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: MaterialButton(
-              child: const Text('Load data from file'),
-              onPressed: () async {
-                FilePickerResult? result = await FilePicker.platform.pickFiles(
-                    type: FileType.custom, allowedExtensions: ['csv']);
-
-                // The result will be null, if the user aborted the dialog
-                if (result != null) {
-                  File file = File(result.files.first.path!);
-                  final history = HourlyEnergyUse.fromComEdCsvFile(file);
-                  print(history.usage[0]);
-                }
-              },
-            ),
-          ),
-          const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
               'This chart shows the average hourly energy use from your Green Button Download.',
