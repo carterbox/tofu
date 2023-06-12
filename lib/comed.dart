@@ -381,7 +381,7 @@ class PriceClock extends StatelessWidget {
         chart.PieChartData(
           sections: sections,
           centerSpaceRadius: innerRadius,
-          startDegreeOffset: (360 / 24) * 4,
+          startDegreeOffset: (360 / 24) * (currentHour.hour + 5),
         ),
       );
     });
@@ -396,10 +396,10 @@ class PriceClockExplainer extends StatelessWidget {
     return Container(
       color: Theme.of(context).dialogBackgroundColor,
       padding: const EdgeInsets.all(20),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
