@@ -320,14 +320,6 @@ class HistoricEnergyUseExplainer extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
-              'Run your appliances when electricity rates are low.',
-              textAlign: TextAlign.left,
-              textScaleFactor: 1,
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Text(
               'This chart shows the average hourly energy use from your Green Button Download.',
               textAlign: TextAlign.left,
               textScaleFactor: 1,

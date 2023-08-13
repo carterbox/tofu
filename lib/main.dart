@@ -171,14 +171,30 @@ class HistoricEnergyUsePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      drawer: const NavigationDrawer(1),
-      body: const HistoricEnergyUseClock(),
-      floatingActionButton: const HistoricEnergyUseExplainerButton(),
-    );
+    return LayoutBuilder(builder: (context, constraints) {
+      final layoutIsWide = constraints.maxWidth > 600;
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(title),
+        ),
+        floatingActionButton:
+            layoutIsWide ? null : const HistoricEnergyUseExplainerButton(),
+        drawer: const NavigationDrawer(1),
+        body: Row(
+          children: [
+            if (layoutIsWide)
+              const Expanded(
+                flex: 13,
+                child: HistoricEnergyUseExplainer(),
+              ),
+            const Expanded(
+              flex: 21,
+              child: HistoricEnergyUseClock(),
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
 
