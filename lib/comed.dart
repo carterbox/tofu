@@ -14,11 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-/// Fetch electricity rate data from ComEd REST API.
+/// Fetch and display electricity rate data from the ComEd REST API.
+///
+/// Note that in accordance to the COMED API, all prices are label with period
+/// ending. i.e. If you ask for the 5 minute price at 10:00 pm, then the price
+/// is for the period from 9:55 pm to 10:00 pm. If you ask for the hourly price
+/// at 1:00 pm, the price is the average from 12:00 pm to 1:00 pm.
 
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:http/http.dart' as http;
@@ -34,52 +41,74 @@ String _dateWithZeros(DateTime date) {
   return str;
 }
 
-/// Reduce and EnergyRate into bins of the requested size
-List<double> getAverageRates(EnergyRates energyRates, int minutesPerBin) {
-  const int minutesPerHour = 60;
-  const int minutesPerDay = minutesPerHour * 24;
-  assert(minutesPerBin >= 5);
-  assert(minutesPerBin <= minutesPerHour);
-  while (minutesPerHour ~/ minutesPerBin != minutesPerHour / minutesPerBin) {
-    minutesPerBin -= 1;
+/// Rounds the given [date] to the hour's end
+///
+/// Year, month, and day are the same. Increase the hour if the minute is
+/// greater than 0.
+DateTime convertToHourEnd(DateTime date) {
+  if (date.minute > 0) {
+    date = date.add(const Duration(hours: 1));
   }
-  final int numBins = minutesPerDay ~/ minutesPerBin;
-
-  List<double> averageRates = List<double>.filled(numBins, 0);
-  List<int> counts = List<int>.filled(numBins, 0);
-
-  for (int i = 0; i < energyRates.rates.length; i++) {
-    int index =
-        (energyRates.dates[i].minute + energyRates.dates[i].hour * 60) ~/
-            minutesPerBin;
-    counts[index] += 1;
-    averageRates[index] += energyRates.rates[i];
-  }
-  for (int i = 0; i < numBins; i++) {
-    if (counts[i] > 0) {
-      averageRates[i] /= counts[i];
-    }
-  }
-  return averageRates;
+  return DateTime(date.year, date.month, date.day, date.hour);
 }
 
-/// Trim energy rates to exactly 24 hours in the future future
-List<double> getStrictHourRates(EnergyRates x) {
-  // Rates are provided as hour ending, so we convert now into the end of hour
-  final now = DateTime.now();
-  final firstHour = now.add(const Duration(hours: 0));
-  final finalHour = now.add(const Duration(hours: 24));
-  var windowedRates = List<double>.filled(24, double.nan, growable: false);
-  for (int i = 0; i < x.rates.length; i++) {
-    final date = x.dates[i];
-    final rate = x.rates[i];
-    if (date.isAfter(firstHour) && date.isBefore(finalHour)) {
-      windowedRates[date.hour] = rate;
-    }
+/// Rounds the given [date] to the day's end
+///
+/// Year, month are the same. Increase the hour if the minute is
+/// greater than 0.
+DateTime convertToDayEnd(DateTime date) {
+  date = convertToHourEnd(date);
+  if (date.hour > 0) {
+    date = date.add(const Duration(days: 1));
   }
-  return windowedRates;
+  return DateTime(date.year, date.month, date.day);
 }
 
+/// Returns the 5-minute rates from the days in range (start, end].
+///
+/// Prices are period-ending, so to get prices for today the range would be from
+/// (the end of) yesterday to (the end of) today.
+Future<CentPerEnergyRates> fetchHistoricHourlyRatesDayRange(
+  DateTime start,
+  DateTime end,
+) async {
+  start = convertToDayEnd(start);
+  end = convertToDayEnd(end);
+
+  if (start.isBefore(end)) {
+
+    List<DateTime> dates = [end];
+    while (dates.last.isAfter(start)) {
+      dates.add(dates.last.subtract(const Duration(days: 1)));
+    }
+
+    final List<http.Response> responses = await Future.wait(dates.map(
+      (date) {
+        return http.get(Uri.parse(
+            'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(date)}'));
+      },
+    ));
+
+    final String texts = responses.map(
+      (response) {
+        if (response.statusCode == 200) {
+          return response.body;
+        } else {
+          throw Exception(
+              'Failed to retrieve historic rates on a day in range $start to $end.');
+        }
+      },
+    ).join();
+
+    return CentPerEnergyRates.fromJavaScriptText(texts);
+  }
+
+  return const CentPerEnergyRates(rates: {});
+}
+
+/// Returns the hour-average rate for the current hour.
+///
+/// Updated every 5 minutes.
 Future<double> fetchCurrentHourAverage() async {
   final response = await http.get(
       Uri.parse('https://hourlypricing.comed.com/api?type=currenthouraverage'));
@@ -88,33 +117,6 @@ Future<double> fetchCurrentHourAverage() async {
     return double.parse(x[0]['price']);
   } else {
     throw Exception('Failed to get current hour average.');
-  }
-}
-
-/// Returns the 5-minute rates from the past 24 Hours.
-Future<CentPerEnergyRates> fetchRatesLast24Hours() async {
-  final response = await http.get(Uri.parse(
-      'https://hourlypricing.comed.com/api?type=5minutefeed&format=json'));
-  if (response.statusCode == 200) {
-    return CentPerEnergyRates.fromJson(jsonDecode(response.body));
-  } else {
-    throw Exception('Failed to load rates from last 24 hours.');
-  }
-}
-
-/// Returns the real hourly rates from the past 24 Hours.
-Future<CentPerEnergyRates> fetchRatesLastDay() async {
-  final today = DateTime.now();
-  final response1 = await http.get(Uri.parse(
-      'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(today)}'));
-  final yesterday = today.subtract(const Duration(days: 1));
-  final response0 = await http.get(Uri.parse(
-      'https://hourlypricing.comed.com/api?type=day&date=${_dateWithZeros(yesterday)}'));
-  if (response0.statusCode == 200 && response1.statusCode == 200) {
-    return CentPerEnergyRates.fromJavaScriptText(
-        response0.body + response1.body);
-  } else {
-    throw Exception('Failed to load rates from last 24 hours.');
   }
 }
 
@@ -134,12 +136,11 @@ Future<CentPerEnergyRates> fetchRatesNextDay() async {
     throw http.ClientException(
         'Server responded with status: ${response1.statusCode}');
   }
-  return CentPerEnergyRates.fromJavaScriptText(response0.body + response1.body)
-      .toExactly24Hours();
+  return CentPerEnergyRates.fromJavaScriptText(response0.body + response1.body);
 }
 
 class EnergyRatesUpdate {
-  final EnergyRates forecast;
+  final HourlyEnergyRates forecast;
   final double currentHour;
 
   const EnergyRatesUpdate({
@@ -148,10 +149,16 @@ class EnergyRatesUpdate {
   });
 }
 
+/// Stream the hourly energy price forecast for as much of the following 24
+/// hours as possible along with and the current hourly average price
+///
+/// The stream yields every 5 minutes +/- 15 seconds with a new current hour
+/// average if the forecast is not null. Each API, the forecast and current
+/// hourly average are called separately and only as needed.
 Stream<EnergyRatesUpdate> streamRatesNextDay() async* {
   final randomInt = Random();
   DateTime lastUpdate = DateTime(0);
-  EnergyRates? forecast;
+  HourlyEnergyRates? forecast;
   while (true) {
     try {
       if (DateTime.now().hour != lastUpdate.hour ||
@@ -176,13 +183,11 @@ Stream<EnergyRatesUpdate> streamRatesNextDay() async* {
   }
 }
 
-/// A collection of energy rates over time.
-abstract class EnergyRates {
+/// A collection of hourly energy rates over time.
+@immutable
+abstract class HourlyEnergyRates {
   /// Times corresponding the end of period for each of the [rates].
-  final List<DateTime> dates;
-
-  /// The number of [units] per kwh
-  final List<double> rates;
+  final Map<DateTime, double> rates;
 
   /// The unit of measure for the [rates].
   String get units;
@@ -193,33 +198,29 @@ abstract class EnergyRates {
   /// Above this value is a middle rate of [units] per kWh
   double get rateMidThreshold;
 
-  const EnergyRates({
-    required this.dates,
+  const HourlyEnergyRates({
     required this.rates,
   });
 
-  /// Provides hours location of min, max, and median rates
-  List<bool> getHighlights() {
-    final finiteRates = rates.where((x) => x.isFinite);
-    var highlights = List<bool>.filled(rates.length, false, growable: false);
+  /// Provides min, median, and max rates in that order
+  List<double> getHighlights() {
+    var finiteRates = Map<DateTime, double>.of(rates);
+    finiteRates.removeWhere((key, value) => !(value.isFinite));
 
-    final double priceMax = finiteRates.reduce(max);
-    highlights[rates.indexOf(priceMax)] = true;
-
-    final double priceMin = finiteRates.reduce(min);
-    highlights[rates.indexOf(priceMin)] = true;
-
-    var ratesSorted = finiteRates.toList().sublist(0, finiteRates.length);
+    var ratesSorted = finiteRates.values.toList();
     ratesSorted.sort();
-    final priceMedian = ratesSorted[finiteRates.length ~/ 2];
-    highlights[rates.indexOf(priceMedian)] = true;
 
-    return highlights;
+    return [
+      ratesSorted[0],
+      ratesSorted[finiteRates.length ~/ 2],
+      ratesSorted[finiteRates.length - 1],
+    ];
   }
 }
 
 /// A collection of US dollar cents per kWh across multiple periods.
-class CentPerEnergyRates extends EnergyRates {
+@immutable
+class CentPerEnergyRates extends HourlyEnergyRates {
   @override
   final String units = '\u00A2';
   @override
@@ -228,86 +229,102 @@ class CentPerEnergyRates extends EnergyRates {
   final double rateMidThreshold = 7.5;
 
   const CentPerEnergyRates({
-    required super.dates,
     required super.rates,
   });
 
-  /// Construct from json like this: [{"millisUTC":"1665944400000","price":"3.0"}, ...]
+  /// Construct from json: [{"millisUTC":"1665944400000","price":"3.0"}, ...]
+  ///
+  /// If multiple rates share the same hour, they are averaged together using
+  /// the same weight for each entry.
   factory CentPerEnergyRates.fromJson(List<dynamic> json) {
+    Map<DateTime, List<double>> rates = {};
+
+    for (final x in json) {
+      final date = convertToHourEnd(DateTime.fromMillisecondsSinceEpoch(
+        int.parse(x['millisUTC']),
+        isUtc: true,
+      ).toLocal());
+
+      final price = double.parse(x['price']);
+
+      var prices = rates.putIfAbsent(date, () => []);
+      prices.add(price);
+    }
+
     return CentPerEnergyRates(
-      dates: json
-          .map((x) => DateTime.fromMillisecondsSinceEpoch(
-                int.parse(x['millisUTC']),
-                isUtc: true,
-              ).toLocal())
-          .toList(),
-      rates: json.map((x) => double.parse(x['price'])).toList(),
+      rates: rates.map<DateTime, double>((key, value) {
+        return MapEntry(key, value.average);
+      }),
     );
   }
 
-  /// Construct from a string like this: [ [Date.UTC(2022,9,16,23,0,0), 4.3], ...]
+  /// Construct from a string: [ [Date.UTC(2022,9,16,23,0,0), 4.3], ...]
   ///
   /// JavaScript uses 0 indexed month, but Dart uses 1 indexed month, so we have
   /// to correct for that.
+  ///
+  /// If multiple rates share the same hour, they are averaged together using
+  /// the same weight for each entry.
   factory CentPerEnergyRates.fromJavaScriptText(String text) {
+    Map<DateTime, List<double>> rates = {};
+
     // Replace the constructor in the string
     final regex = RegExp(r'[0-9]+\.?[0-9]*');
     final numbers =
         regex.allMatches(text).map((x) => x[0]!).toList(growable: false);
-    var dates = List<DateTime>.empty(growable: true);
-    var rates = List<double>.empty(growable: true);
+
     for (var i = 0; i < numbers.length; i += 7) {
-      dates.add(DateTime(
+      final date = convertToHourEnd(DateTime(
         int.parse(numbers[i]), // year
         int.parse(numbers[i + 1]) + 1, // month
         int.parse(numbers[i + 2]), // day
         int.parse(numbers[i + 3]), // hour
-        int.parse(numbers[i + 4]),
-        int.parse(numbers[i + 5]),
+        int.parse(numbers[i + 4]), // minute
+        int.parse(numbers[i + 5]), // second
       ));
-      rates.add(double.parse(numbers[i + 6]));
+      final price = double.parse(numbers[i + 6]);
+
+      var prices = rates.putIfAbsent(date, () => []);
+      prices.add(price);
     }
+
     return CentPerEnergyRates(
-      dates: dates,
-      rates: rates,
+      rates: rates.map<DateTime, double>((key, value) {
+        return MapEntry(key, value.average);
+      }),
     );
   }
 
   /// Trim energy rates to exactly 24 hours in the future
   CentPerEnergyRates toExactly24Hours() {
-    // Rates are provided as hour ending, so we convert now into the end of hour
-    final now = DateTime.now();
-    final firstHour = now.add(const Duration(hours: 0));
-    final finalHour = now.add(const Duration(hours: 24));
-    var windowedRates = List<double>.filled(24, double.nan, growable: false);
-    var windowedDates = List<DateTime>.filled(24, DateTime(0), growable: false);
-    for (int i = 0; i < rates.length; i++) {
-      final date = dates[i];
-      final rate = rates[i];
-      if (date.isAfter(firstHour) && date.isBefore(finalHour)) {
-        windowedRates[date.hour] = rate;
-        windowedDates[date.hour] = date;
+    Map<DateTime, double> rates = {};
+
+    final firstHour = convertToHourEnd(DateTime.now());
+
+    for (int i = 0; i < 24; i++) {
+      final thisHour = firstHour.add(Duration(hours: i));
+      if (this.rates.containsKey(thisHour)) {
+        rates[thisHour] = this.rates[thisHour]!;
       }
     }
+
     return CentPerEnergyRates(
-      rates: windowedRates,
-      dates: windowedDates,
+      rates: rates,
     );
   }
 
-  /// Concatenate another [CentPerEnergyRates] to this one.
-  CentPerEnergyRates operator +(CentPerEnergyRates other) {
-    return CentPerEnergyRates(
-      dates: dates + other.dates,
-      rates: rates + other.rates,
-    );
+  @override
+  String toString() {
+    return rates.entries
+        .map((e) => '${e.value.toStringAsFixed(2)}$units hour-ending ${e.key}')
+        .join('\n');
   }
 }
 
 /// A circular bar chart showing the current and forecasted energy rates for a
 /// 24 hour period
 class PriceClock extends StatelessWidget {
-  final EnergyRates energyRates;
+  final HourlyEnergyRates energyRates;
   final double radius;
   final double currentHourRate;
 
@@ -331,11 +348,13 @@ class PriceClock extends StatelessWidget {
       final double barHeightMaximum = (energyRates.rateHighThreshold * 1.1);
       var sections = List<chart.PieChartSectionData>.empty(growable: true);
       final isImportant = energyRates.getHighlights();
-      for (int hour = 0; hour < energyRates.rates.length; hour++) {
-        final bool isCurrentHour = (hour == (DateTime.now().hour + 1) % 24);
-        final double price = (isCurrentHour && currentHourRate.isFinite)
+      DateTime currentHour = convertToHourEnd(DateTime.now());
+      for (int hour = 0; hour < 24; hour++) {
+        final bool isCurrentHour = (hour == 0);
+        final double price = isCurrentHour
             ? currentHourRate
-            : energyRates.rates[hour];
+            : energyRates.rates[currentHour.add(Duration(hours: hour))] ??
+                double.nan;
 
         double barHeight = price;
         if (price < 0.0) {
@@ -348,7 +367,8 @@ class PriceClock extends StatelessWidget {
         }
         sections.add(chart.PieChartSectionData(
           value: 1,
-          showTitle: price.isFinite && (isCurrentHour || isImportant[hour]),
+          showTitle:
+              price.isFinite && (isCurrentHour || isImportant.contains(price)),
           title: '${price.toStringAsFixed(1)}${energyRates.units}',
           radius: outerRadius * barHeight / barHeightMaximum,
           titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
@@ -361,7 +381,7 @@ class PriceClock extends StatelessWidget {
         chart.PieChartData(
           sections: sections,
           centerSpaceRadius: innerRadius,
-          startDegreeOffset: (360 / 24) * 5,
+          startDegreeOffset: (360 / 24) * (currentHour.hour + 5),
         ),
       );
     });
@@ -376,10 +396,10 @@ class PriceClockExplainer extends StatelessWidget {
     return Container(
       color: Theme.of(context).dialogBackgroundColor,
       padding: const EdgeInsets.all(20),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
@@ -396,7 +416,7 @@ class PriceClockExplainer extends StatelessWidget {
               textScaleFactor: 1,
             ),
           ),
-            Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
               'This chart shows the current and forecasted hourly average electricity prices for as much of the next 24 hours as possible in the Chicagoland ComEd energy market.',
