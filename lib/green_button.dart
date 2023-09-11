@@ -28,6 +28,7 @@ import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'comed.dart';
 
 import 'package:flutter/services.dart' show rootBundle;
@@ -166,6 +167,10 @@ class HourlyEnergyUse {
     var totals = List<double>.filled(24, 0.0, growable: false);
     var counts = List<double>.filled(24, 0.0, growable: false);
 
+    if (usage.isEmpty) {
+      return totals;
+    }
+
     for (final reading in usage.entries) {
       final hour = reading.key.hour;
       totals[hour] += reading.value;
@@ -175,7 +180,7 @@ class HourlyEnergyUse {
     return [for (var i = 0; i < totals.length; ++i) totals[i] / counts[i]];
   }
 
-  HourlyEnergyUse filterByWeekday(List<int> weekdays) {
+  HourlyEnergyUse filterByWeekday(Set<int> weekdays) {
     final filteredUsage = Map.of(usage);
     filteredUsage.removeWhere((key, value) => !weekdays.contains(key.weekday));
     return HourlyEnergyUse(
@@ -203,95 +208,203 @@ class HourlyEnergyUse {
 
 /// Provides min, median, and max rates in that order
 List<double> getHighlights(List<double> values) {
-  var ratesSorted = values.toList();
-  ratesSorted.removeWhere((element) => !(element.isFinite));
-  ratesSorted.sort();
-  return [
-    ratesSorted[0],
-    ratesSorted[ratesSorted.length ~/ 2],
-    ratesSorted[ratesSorted.length - 1],
-  ];
+  if (values.isNotEmpty) {
+    var ratesSorted = values.toList();
+    ratesSorted.removeWhere((element) => !(element.isFinite));
+    ratesSorted.sort();
+    return [
+      ratesSorted[0],
+      ratesSorted[ratesSorted.length ~/ 2],
+      ratesSorted[ratesSorted.length - 1],
+    ];
+  }
+  return [];
 }
 
-enum Weekdays{Noneday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday}
+@immutable
+class HistoricEnergyUseClockState {
+  final HourlyEnergyUse historicEnergyUse;
+  final HourlyEnergyUse filteredHistoricEnergyUse;
+  final Set<int> weekdays;
 
-class HistoricEnergyUseClock extends StatefulWidget {
+  const HistoricEnergyUseClockState({
+    required this.historicEnergyUse,
+    required this.filteredHistoricEnergyUse,
+    required this.weekdays,
+  });
+
+  // Since HistoricEnergyUseClockState is immutable, we implement a method that
+  // allows cloning the Todo with slightly different content.
+  HistoricEnergyUseClockState copyWith(
+      {HourlyEnergyUse? historicEnergyUse,
+      HourlyEnergyUse? filteredHistoricEnergyUse,
+      Set<int>? weekdays}) {
+    return HistoricEnergyUseClockState(
+      historicEnergyUse: historicEnergyUse ?? this.historicEnergyUse,
+      filteredHistoricEnergyUse:
+          filteredHistoricEnergyUse ?? this.filteredHistoricEnergyUse,
+      weekdays: weekdays ?? this.weekdays,
+    );
+  }
+
+  HistoricEnergyUseClockState filterByWeekday(Set<int> weekdays) {
+    return HistoricEnergyUseClockState(
+      historicEnergyUse: historicEnergyUse,
+      filteredHistoricEnergyUse: historicEnergyUse.filterByWeekday(weekdays),
+      weekdays: weekdays,
+    );
+  }
+}
+
+class HistoricEnergyUseClock extends StatelessWidget {
   final double radius;
+  final HistoricEnergyUseClockState state;
 
   const HistoricEnergyUseClock({
     super.key,
+    required this.state,
     this.radius = 1.0,
   });
 
   @override
-  HistoricEnergyUseClockState createState() => HistoricEnergyUseClockState();
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final double diameter =
+          0.5 * min(constraints.maxHeight, constraints.maxWidth);
+
+      final innerRadius = diameter * radius * 0.25;
+      final outerRadius = diameter * radius * 0.75;
+
+      final theme = Theme.of(context);
+      final double barHeightMaximum =
+          (state.filteredHistoricEnergyUse.rateHighThreshold * 1.1);
+      var sections = List<chart.PieChartSectionData>.empty(growable: true);
+      final usage = state.filteredHistoricEnergyUse.hourlyAverages();
+      final isImportant = getHighlights(usage);
+      for (int hour = 0; hour < 24; hour++) {
+        final double price = usage[hour];
+
+        double barHeight = price;
+        if (price < 0.0) {
+          // Large negative bars look really bad.
+          barHeight = -1.0;
+        }
+        if (price == 0.0 || !price.isFinite) {
+          // Chart cannot render a zero height bar.
+          barHeight = 0.001;
+        }
+        sections.add(chart.PieChartSectionData(
+          value: 1,
+          showTitle: price.isFinite && isImportant.contains(price),
+          title:
+              '${price.toStringAsFixed(1)}${state.filteredHistoricEnergyUse.units}',
+          radius: outerRadius * barHeight / barHeightMaximum,
+          titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
+          color: theme.colorScheme.primary,
+        ));
+      }
+      return chart.PieChart(
+        chart.PieChartData(
+          sections: sections,
+          centerSpaceRadius: innerRadius,
+          startDegreeOffset: (360 / 24) * 5,
+        ),
+      );
+    });
+  }
 }
 
-class HistoricEnergyUseClockState extends State<HistoricEnergyUseClock> {
-  HourlyEnergyUse? historicEnergyUse;
+class HistoricEnergyUseClockNotifier
+    extends StateNotifier<HistoricEnergyUseClockState> {
+  HistoricEnergyUseClockNotifier()
+      : super(const HistoricEnergyUseClockState(
+          historicEnergyUse: HourlyEnergyUse(usage: {}),
+          filteredHistoricEnergyUse: HourlyEnergyUse(usage: {}),
+          weekdays: {1, 2, 3, 4, 5, 6, 7},
+        ));
+
+  void changeEnergyUse(HourlyEnergyUse newUse) {
+    state = state.copyWith(
+      historicEnergyUse: newUse,
+      filteredHistoricEnergyUse: newUse.filterByWeekday(state.weekdays),
+    );
+  }
+
+  void changeFilter(Set<int> newWeekdays) {
+    state = state.copyWith(
+      filteredHistoricEnergyUse:
+          state.historicEnergyUse.filterByWeekday(newWeekdays),
+      weekdays: newWeekdays,
+    );
+  }
+}
+
+class HistoricEnergyUseClockController extends ConsumerWidget {
+  final StateNotifierProvider<HistoricEnergyUseClockNotifier,
+      HistoricEnergyUseClockState> stateProvider;
+
+  static const Map<String, int> dayNames = {
+    'monday': DateTime.monday,
+    'tuesday': DateTime.tuesday,
+    'wednesday': DateTime.wednesday,
+    'thursday': DateTime.thursday,
+    'friday': DateTime.friday,
+    'saturday': DateTime.saturday,
+    'sunday': DateTime.sunday,
+  };
+
+  const HistoricEnergyUseClockController({
+    super.key,
+    required this.stateProvider,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    if (historicEnergyUse != null) {
-      return LayoutBuilder(builder: (context, constraints) {
-        final double diameter =
-            0.5 * min(constraints.maxHeight, constraints.maxWidth);
+  Widget build(BuildContext context, WidgetRef ref) {
+    HistoricEnergyUseClockState state = ref.watch(stateProvider);
+    final TextTheme textTheme = Theme.of(context).textTheme;
 
-        final innerRadius = diameter * widget.radius * 0.25;
-        final outerRadius = diameter * widget.radius * 0.75;
-
-        final theme = Theme.of(context);
-        final double barHeightMaximum =
-            (historicEnergyUse!.rateHighThreshold * 1.1);
-        var sections = List<chart.PieChartSectionData>.empty(growable: true);
-        final usage = historicEnergyUse!.hourlyAverages();
-        final isImportant = getHighlights(usage);
-        for (int hour = 0; hour < 24; hour++) {
-          final double price = usage[hour];
-
-          double barHeight = price;
-          if (price < 0.0) {
-            // Large negative bars look really bad.
-            barHeight = -1.0;
-          }
-          if (price == 0.0 || !price.isFinite) {
-            // Chart cannot render a zero height bar.
-            barHeight = 0.001;
-          }
-          sections.add(chart.PieChartSectionData(
-            value: 1,
-            showTitle: price.isFinite && isImportant.contains(price),
-            title: '${price.toStringAsFixed(1)}${historicEnergyUse!.units}',
-            radius: outerRadius * barHeight / barHeightMaximum,
-            titlePositionPercentageOffset:
-                1 + 0.1 * barHeightMaximum / barHeight,
-            color: theme.colorScheme.primary,
-          ));
-        }
-         return  chart.PieChart(
-              chart.PieChartData(
-                sections: sections,
-                centerSpaceRadius: innerRadius,
-                startDegreeOffset: (360 / 24) * 5,
-              ),
-            );
-      });
-    }
     return Center(
-      child: ElevatedButton(
-        child: const Text('Load your usage data'),
-        onPressed: () async {
-          FilePickerResult? result = await FilePicker.platform
-              .pickFiles(type: FileType.custom, allowedExtensions: ['csv']);
-
-          // The result will be null, if the user aborted the dialog
-          if (result != null) {
-            setState(() {
-              File file = File(result.files.first.path!);
-              historicEnergyUse = HourlyEnergyUse.fromComEdCsvFile(file);
-            });
-          }
-        },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: <Widget>[
+          ElevatedButton(
+            child: const Text('Load your usage data'),
+            onPressed: () async {
+              FilePickerResult? result = await FilePicker.platform
+                  .pickFiles(type: FileType.custom, allowedExtensions: ['csv']);
+              // The result will be null, if the user aborted the dialog
+              if (result != null) {
+                File file = File(result.files.first.path!);
+                ref
+                    .read(stateProvider.notifier)
+                    .changeEnergyUse(HourlyEnergyUse.fromComEdCsvFile(file));
+              }
+            },
+          ),
+          const SizedBox(height: 5.0),
+          Text('Filter weekdays', style: textTheme.labelLarge),
+          const SizedBox(height: 5.0),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 5.0,
+            runSpacing: 5.0,
+            children: dayNames.entries.map((entry) {
+              return FilterChip(
+                label: Text(entry.key),
+                selected: state.weekdays.contains(entry.value),
+                onSelected: (bool selected) {
+                  Set<int> newWeekdays = Set.from(state.weekdays);
+                  if (selected) {
+                    newWeekdays.add(entry.value);
+                  } else {
+                    newWeekdays.remove(entry.value);
+                  }
+                  ref.read(stateProvider.notifier).changeFilter(newWeekdays);
+                },
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
