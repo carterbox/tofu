@@ -164,13 +164,12 @@ class HourlyEnergyUse {
 
   /// Return 24 averaged hour-ending readings
   List<double> hourlyAverages() {
-    var totals = List<double>.filled(24, 0.0, growable: false);
-    var counts = List<double>.filled(24, 0.0, growable: false);
-
     if (usage.isEmpty) {
-      return totals;
+      return List<double>.filled(24, double.nan, growable: false);
     }
 
+    var totals = List<double>.filled(24, 0.0, growable: false);
+    var counts = List<double>.filled(24, 0.0, growable: false);
     for (final reading in usage.entries) {
       final hour = reading.key.hour;
       totals[hour] += reading.value;
@@ -208,17 +207,17 @@ class HourlyEnergyUse {
 
 /// Provides min, median, and max rates in that order
 List<double> getHighlights(List<double> values) {
-  if (values.isNotEmpty) {
-    var ratesSorted = values.toList();
-    ratesSorted.removeWhere((element) => !(element.isFinite));
-    ratesSorted.sort();
-    return [
-      ratesSorted[0],
-      ratesSorted[ratesSorted.length ~/ 2],
-      ratesSorted[ratesSorted.length - 1],
-    ];
+  var ratesSorted = values.toList();
+  ratesSorted.removeWhere((element) => !(element.isFinite));
+  if (ratesSorted.isEmpty) {
+    return [];
   }
-  return [];
+  ratesSorted.sort();
+  return [
+    ratesSorted[0],
+    ratesSorted[ratesSorted.length ~/ 2],
+    ratesSorted[ratesSorted.length - 1],
+  ];
 }
 
 @immutable
