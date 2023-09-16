@@ -76,7 +76,6 @@ Future<CentPerEnergyRates> fetchHistoricHourlyRatesDayRange(
   end = convertToDayEnd(end);
 
   if (start.isBefore(end)) {
-
     List<DateTime> dates = [end];
     while (dates.last.isAfter(start)) {
       dates.add(dates.last.subtract(const Duration(days: 1)));
@@ -319,6 +318,51 @@ class CentPerEnergyRates extends HourlyEnergyRates {
         .map((e) => '${e.value.toStringAsFixed(2)}$units hour-ending ${e.key}')
         .join('\n');
   }
+
+  CentPerEnergyRates filterByWeekday(Set<int> weekdays) {
+    final filteredUsage = Map.of(rates);
+    filteredUsage.removeWhere((key, value) => !weekdays.contains(key.weekday));
+    return CentPerEnergyRates(
+      rates: filteredUsage,
+    );
+  }
+
+  factory CentPerEnergyRates.placeholder() {
+    Map<DateTime, double> rates = {
+      DateTime(2023, 1, 1, 01): 0.15,
+      DateTime(2023, 1, 1, 02): 0.2,
+      DateTime(2023, 1, 1, 03): 0.1,
+      DateTime(2023, 1, 1, 04): 0.3,
+      DateTime(2023, 1, 1, 05): 0.15,
+      DateTime(2023, 1, 1, 06): 0.4,
+      DateTime(2023, 1, 1, 07): 0.3,
+      DateTime(2023, 1, 1, 08): 0.2,
+      DateTime(2023, 1, 1, 09): 0.15,
+      DateTime(2023, 1, 1, 10): 0.5,
+      DateTime(2023, 1, 1, 11): 0.2,
+      DateTime(2023, 1, 1, 12): 0.15,
+      DateTime(2023, 1, 3, 01): 0.3,
+    };
+    return CentPerEnergyRates(rates: rates);
+  }
+
+  /// Return 24 averaged hour-ending readings
+  List<double> hourlyAverages() {
+    if (rates.isEmpty) {
+      return List<double>.filled(24, double.nan, growable: false);
+    }
+
+    var totals = List<double>.filled(24, 0.0, growable: false);
+    var counts = List<double>.filled(24, 0.0, growable: false);
+    for (final reading in rates.entries) {
+      final hour = reading.key.hour;
+      totals[hour] += reading.value;
+      counts[hour] += 1;
+    }
+
+    return [for (var i = 0; i < totals.length; ++i) totals[i] / counts[i]];
+  }
+
 }
 
 /// A circular bar chart showing the current and forecasted energy rates for a
