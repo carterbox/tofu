@@ -164,15 +164,40 @@ class HourlyEnergyRatesPage extends StatelessWidget {
   }
 }
 
-class HistoricEnergyUsePage extends StatelessWidget {
+final energyUseProvider = StateNotifierProvider<HistoricEnergyUseClockNotifier,
+    HistoricEnergyUseClockState>((ref) {
+  return HistoricEnergyUseClockNotifier();
+});
+
+class HistoricEnergyUsePage extends ConsumerWidget {
   const HistoricEnergyUsePage({super.key});
 
   final String title = 'Historic Energy Use';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    HistoricEnergyUseClockState state = ref.watch(energyUseProvider);
+
     return LayoutBuilder(builder: (context, constraints) {
       final layoutIsWide = constraints.maxWidth > 600;
+
+      Widget body = Row(children: [
+        if (layoutIsWide)
+          const Expanded(
+            flex: 13,
+            child: HistoricEnergyUseExplainer(),
+          ),
+        Expanded(
+            flex: 21,
+            child: Column(
+              children: [
+                Expanded(child: HistoricEnergyUseClock(state: state)),
+                HistoricEnergyUseClockController(
+                    stateProvider: energyUseProvider)
+              ],
+            )),
+      ]);
+
       return Scaffold(
         appBar: AppBar(
           title: Text(title),
@@ -180,19 +205,7 @@ class HistoricEnergyUsePage extends StatelessWidget {
         floatingActionButton:
             layoutIsWide ? null : const HistoricEnergyUseExplainerButton(),
         drawer: const NavigationDrawer(1),
-        body: Row(
-          children: [
-            if (layoutIsWide)
-              const Expanded(
-                flex: 13,
-                child: HistoricEnergyUseExplainer(),
-              ),
-            const Expanded(
-              flex: 21,
-              child: HistoricEnergyUseClock(),
-            ),
-          ],
-        ),
+        body: body,
       );
     });
   }
