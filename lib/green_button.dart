@@ -366,6 +366,7 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[
+          const SizedBox(height: 5.0),
           ElevatedButton(
             child: const Text('Load your usage data'),
             onPressed: () async {
@@ -380,11 +381,12 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
               }
             },
           ),
-          const SizedBox(height: 5.0),
-          Text('Filter weekdays', style: textTheme.labelLarge),
-          const SizedBox(height: 5.0),
+          const SizedBox(height: 30.0),
+          Text('Filter by weekday', style: textTheme.titleLarge),
+          const SizedBox(height: 10.0),
           Wrap(
             alignment: WrapAlignment.center,
+            runAlignment: WrapAlignment.center,
             spacing: 5.0,
             runSpacing: 5.0,
             children: dayNames.entries.map((entry) {
@@ -403,6 +405,7 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
               );
             }).toList(),
           ),
+          const SizedBox(height: 10.0),
         ],
       ),
     );

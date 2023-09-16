@@ -188,15 +188,14 @@ class HistoricEnergyUsePage extends ConsumerWidget {
             child: HistoricEnergyUseExplainer(),
           ),
         Expanded(
-          flex: 21,
-          child: Column(children: [
-            Expanded(flex:2, child: HistoricEnergyUseClock(state: state)),
-            Expanded(
-              flex: 1,
-                child: HistoricEnergyUseClockController(
-                    stateProvider: energyUseProvider))
-          ]),
-        ),
+            flex: 21,
+            child: Column(
+              children: [
+                Expanded(child: HistoricEnergyUseClock(state: state)),
+                HistoricEnergyUseClockController(
+                    stateProvider: energyUseProvider)
+              ],
+            )),
       ]);
 
       return Scaffold(
