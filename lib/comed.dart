@@ -99,6 +99,7 @@ Future<CentPerEnergyRates> fetchHistoricHourlyRatesDayRange(
       },
     ).join();
 
+    _logger.info('Fetched hourly prices from ComEd from $start to $end.');
     return CentPerEnergyRates.fromJavaScriptText(texts);
   }
 
@@ -221,7 +222,7 @@ abstract class HourlyEnergyRates {
 @immutable
 class CentPerEnergyRates extends HourlyEnergyRates {
   @override
-  final String units = '\u00A2';
+  final String units = '\u00A2/kWh';
   @override
   final double rateHighThreshold = 15;
   @override
@@ -362,7 +363,6 @@ class CentPerEnergyRates extends HourlyEnergyRates {
 
     return [for (var i = 0; i < totals.length; ++i) totals[i] / counts[i]];
   }
-
 }
 
 /// A circular bar chart showing the current and forecasted energy rates for a
