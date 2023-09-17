@@ -191,7 +191,14 @@ class HistoricEnergyUsePage extends ConsumerWidget {
             flex: 21,
             child: Column(
               children: [
-                Expanded(child: HistoricEnergyUseClock(state: state)),
+                Expanded(
+                    child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const SolarCircle(radius: 0.255),
+                    HistoricEnergyUseClock(state: state),
+                  ],
+                )),
                 HistoricEnergyUseClockController(
                     stateProvider: energyUseProvider)
               ],

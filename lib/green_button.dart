@@ -25,13 +25,17 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:logging/logging.dart' as logging;
 import 'comed.dart';
 
 import 'package:flutter/services.dart' show rootBundle;
+
+final _logger = logging.Logger('electricity_clock.green_button');
 
 Future<String> loadPlaceholderGreenbutton() async {
   return await rootBundle.loadString('assets/data/greenbutton-placeholder.csv');
@@ -220,37 +224,131 @@ List<double> getHighlights(List<double> values) {
   ];
 }
 
+double _computeAverageRate(
+  Map<DateTime, double> usage,
+  Map<DateTime, double> rates,
+) {
+  if (rates.isNotEmpty && usage.isNotEmpty) {
+    double totalUsage = 0.0;
+    double totalCost = 0.0;
+    for (final hour in usage.entries) {
+      if (rates.containsKey(hour.key)) {
+        totalUsage += hour.value;
+        totalCost += hour.value * rates[hour.key]!;
+      } else {
+        _logger.warning(
+            'No matching rate found for usage during hour ending ${hour.key}');
+      }
+    }
+    if (totalUsage != 0.0) {
+      return totalCost / totalUsage;
+    }
+  }
+  return double.nan;
+}
+
 @immutable
 class HistoricEnergyUseClockState {
   final HourlyEnergyUse historicEnergyUse;
   final HourlyEnergyUse filteredHistoricEnergyUse;
+  final CentPerEnergyRates historicEnergyRates;
+  final CentPerEnergyRates filteredHistoricEnergyRates;
   final Set<int> weekdays;
+  final double averageRate;
 
   const HistoricEnergyUseClockState({
     required this.historicEnergyUse,
     required this.filteredHistoricEnergyUse,
+    required this.historicEnergyRates,
+    required this.filteredHistoricEnergyRates,
     required this.weekdays,
+    this.averageRate = double.nan,
   });
 
-  // Since HistoricEnergyUseClockState is immutable, we implement a method that
-  // allows cloning the Todo with slightly different content.
-  HistoricEnergyUseClockState copyWith(
-      {HourlyEnergyUse? historicEnergyUse,
-      HourlyEnergyUse? filteredHistoricEnergyUse,
-      Set<int>? weekdays}) {
+  factory HistoricEnergyUseClockState.fromUnfiltered({
+    required HourlyEnergyUse historicEnergyUse,
+    required CentPerEnergyRates historicEnergyRates,
+  }) {
     return HistoricEnergyUseClockState(
-      historicEnergyUse: historicEnergyUse ?? this.historicEnergyUse,
-      filteredHistoricEnergyUse:
-          filteredHistoricEnergyUse ?? this.filteredHistoricEnergyUse,
-      weekdays: weekdays ?? this.weekdays,
-    );
+        historicEnergyUse: historicEnergyUse,
+        filteredHistoricEnergyUse: historicEnergyUse,
+        historicEnergyRates: historicEnergyRates,
+        filteredHistoricEnergyRates: historicEnergyRates,
+        weekdays: const {1, 2, 3, 4, 5, 6, 7},
+        averageRate: _computeAverageRate(
+          historicEnergyUse.usage,
+          historicEnergyRates.rates,
+        ));
   }
 
   HistoricEnergyUseClockState filterByWeekday(Set<int> weekdays) {
+    final filteredUsage = historicEnergyUse.filterByWeekday(weekdays);
+    final filteredRates = historicEnergyRates.filterByWeekday(weekdays);
     return HistoricEnergyUseClockState(
       historicEnergyUse: historicEnergyUse,
-      filteredHistoricEnergyUse: historicEnergyUse.filterByWeekday(weekdays),
+      filteredHistoricEnergyUse: filteredUsage,
+      historicEnergyRates: historicEnergyRates,
+      filteredHistoricEnergyRates: filteredRates,
       weekdays: weekdays,
+      averageRate: _computeAverageRate(
+        filteredUsage.usage,
+        filteredRates.rates,
+      ),
+    );
+  }
+}
+
+chart.PieChartSectionData createSection(
+    {required double value,
+    required String units,
+    required Color color,
+    required List<double> isImportant,
+    required double outerRadius,
+    required double barHeightMaximum}) {
+  double barHeight = value;
+  if (value < 0.0) {
+    // Large negative bars look really bad.
+    barHeight = -1.0;
+  }
+  if (value == 0.0 || !value.isFinite) {
+    // Chart cannot render a zero height bar.
+    barHeight = 0.001;
+  }
+  return chart.PieChartSectionData(
+    value: 1,
+    showTitle: value.isFinite && isImportant.contains(value),
+    title: '${value.toStringAsFixed(1)} $units',
+    radius: outerRadius * barHeight / barHeightMaximum,
+    titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
+    color: color,
+  );
+}
+
+class Legend extends StatelessWidget {
+  final List<String> labels;
+  final List<Color> colors;
+
+  const Legend({
+    super.key,
+    required this.labels,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    var chips = <Chip>[];
+    for (var i = 0; i < labels.length; ++i) {
+      chips.add(Chip(
+        avatar: CircleAvatar(
+          backgroundColor: colors[i],
+        ),
+        label: Text(labels[i]),
+        backgroundColor: Colors.transparent,
+      ));
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: chips,
     );
   }
 }
@@ -267,49 +365,64 @@ class HistoricEnergyUseClock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final double diameter =
-          0.5 * min(constraints.maxHeight, constraints.maxWidth);
-
-      final innerRadius = diameter * radius * 0.25;
-      final outerRadius = diameter * radius * 0.75;
-
-      final theme = Theme.of(context);
-      final double barHeightMaximum =
-          (state.filteredHistoricEnergyUse.rateHighThreshold * 1.1);
-      var sections = List<chart.PieChartSectionData>.empty(growable: true);
-      final usage = state.filteredHistoricEnergyUse.hourlyAverages();
-      final isImportant = getHighlights(usage);
-      for (int hour = 0; hour < 24; hour++) {
-        final double price = usage[hour];
-
-        double barHeight = price;
-        if (price < 0.0) {
-          // Large negative bars look really bad.
-          barHeight = -1.0;
-        }
-        if (price == 0.0 || !price.isFinite) {
-          // Chart cannot render a zero height bar.
-          barHeight = 0.001;
-        }
-        sections.add(chart.PieChartSectionData(
-          value: 1,
-          showTitle: price.isFinite && isImportant.contains(price),
-          title:
-              '${price.toStringAsFixed(1)}${state.filteredHistoricEnergyUse.units}',
-          radius: outerRadius * barHeight / barHeightMaximum,
-          titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
-          color: theme.colorScheme.primary,
-        ));
-      }
-      return chart.PieChart(
-        chart.PieChartData(
-          sections: sections,
-          centerSpaceRadius: innerRadius,
-          startDegreeOffset: (360 / 24) * 5,
+    final theme = Theme.of(context);
+    return Stack(
+      children: [
+        Legend(
+          labels: const [
+            'Energy Use',
+            'Energy Rates',
+          ],
+          colors: [
+            theme.colorScheme.secondary,
+            theme.colorScheme.primary,
+          ],
         ),
-      );
-    });
+        LayoutBuilder(builder: (context, constraints) {
+          final double diameter =
+              0.5 * min(constraints.maxHeight, constraints.maxWidth);
+
+          final innerRadius = diameter * radius * 0.25;
+          final outerRadius = diameter * radius * 0.75;
+
+          final theme = Theme.of(context);
+          final double barHeightMaximumUsage =
+              (state.filteredHistoricEnergyUse.rateHighThreshold * 1.1);
+          final double barHeightMaximumRates =
+              (state.filteredHistoricEnergyRates.rateHighThreshold * 1.1);
+          var sections = List<chart.PieChartSectionData>.empty(growable: true);
+          final usage = state.filteredHistoricEnergyUse.hourlyAverages();
+          final rates = state.filteredHistoricEnergyRates.hourlyAverages();
+          final isImportantUsage = getHighlights(usage);
+          final isImportantRates = getHighlights(rates);
+          for (int hour = 0; hour < 24; hour++) {
+            sections.add(createSection(
+              value: usage[hour],
+              units: state.historicEnergyUse.units,
+              color: theme.colorScheme.secondary,
+              isImportant: isImportantUsage,
+              outerRadius: outerRadius,
+              barHeightMaximum: barHeightMaximumUsage,
+            ));
+            sections.add(createSection(
+              value: rates[hour],
+              units: state.historicEnergyRates.units,
+              color: theme.colorScheme.primary,
+              isImportant: isImportantRates,
+              outerRadius: outerRadius,
+              barHeightMaximum: barHeightMaximumRates,
+            ));
+          }
+          return chart.PieChart(
+            chart.PieChartData(
+              sections: sections,
+              centerSpaceRadius: innerRadius,
+              startDegreeOffset: (360 / 24) * 5,
+            ),
+          );
+        }),
+      ],
+    );
   }
 }
 
@@ -319,21 +432,21 @@ class HistoricEnergyUseClockNotifier
       : super(const HistoricEnergyUseClockState(
           historicEnergyUse: HourlyEnergyUse(usage: {}),
           filteredHistoricEnergyUse: HourlyEnergyUse(usage: {}),
+          historicEnergyRates: CentPerEnergyRates(rates: {}),
+          filteredHistoricEnergyRates: CentPerEnergyRates(rates: {}),
           weekdays: {1, 2, 3, 4, 5, 6, 7},
         ));
 
-  void changeEnergyUse(HourlyEnergyUse newUse) {
-    state = state.copyWith(
+  void changeEnergyUse(HourlyEnergyUse newUse, CentPerEnergyRates newRates) {
+    state = HistoricEnergyUseClockState.fromUnfiltered(
       historicEnergyUse: newUse,
-      filteredHistoricEnergyUse: newUse.filterByWeekday(state.weekdays),
-    );
+      historicEnergyRates: newRates,
+    ).filterByWeekday(state.weekdays);
   }
 
   void changeFilter(Set<int> newWeekdays) {
-    state = state.copyWith(
-      filteredHistoricEnergyUse:
-          state.historicEnergyUse.filterByWeekday(newWeekdays),
-      weekdays: newWeekdays,
+    state = state.filterByWeekday(
+      newWeekdays,
     );
   }
 }
@@ -362,6 +475,14 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
     HistoricEnergyUseClockState state = ref.watch(stateProvider);
     final TextTheme textTheme = Theme.of(context).textTheme;
 
+    String averagePriceMessage = '';
+    if (state.averageRate.isFinite) {
+      averagePriceMessage =
+          'The average price for electricity only is ${state.averageRate.toStringAsFixed(3)} ${state.filteredHistoricEnergyRates.units}. Other fees and charges may apply.';
+    } else {
+      averagePriceMessage = 'The average electricity price is unknown.';
+    }
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -375,9 +496,17 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
               // The result will be null, if the user aborted the dialog
               if (result != null) {
                 File file = File(result.files.first.path!);
-                ref
-                    .read(stateProvider.notifier)
-                    .changeEnergyUse(HourlyEnergyUse.fromComEdCsvFile(file));
+                final newUsage = HourlyEnergyUse.fromComEdCsvFile(file);
+                final dateRange = newUsage.getDateRange();
+                final newRates = await fetchHistoricHourlyRatesDayRange(
+                  dateRange[0],
+                  dateRange[1],
+                );
+                // TODO: Add a loading state here while awaiting results?
+                ref.read(stateProvider.notifier).changeEnergyUse(
+                      newUsage,
+                      newRates,
+                    );
               }
             },
           ),
@@ -404,6 +533,11 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
                 },
               );
             }).toList(),
+          ),
+          const SizedBox(height: 10.0),
+          Text(
+            averagePriceMessage,
+            style: textTheme.bodyMedium,
           ),
           const SizedBox(height: 10.0),
         ],
