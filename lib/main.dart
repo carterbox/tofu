@@ -34,7 +34,6 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     setWindowMinSize(const Size(500, 500));
-    setWindowMaxSize(const Size(1000, 800));
   }
   runApp(const ProviderScope(child: MyApp()));
 }
