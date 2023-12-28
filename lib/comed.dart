@@ -455,9 +455,7 @@ class PriceClockExplainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: colorScheme.primaryContainer,
       padding: const EdgeInsets.all(20),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,11 +497,13 @@ class PriceClockExplainerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return FloatingActionButton(
       child: const Icon(Icons.question_mark),
       onPressed: () {
         showModalBottomSheet<void>(
           context: context,
+          backgroundColor: colorScheme.primaryContainer,
           builder: (BuildContext context) {
             return const PriceClockExplainer();
           },
