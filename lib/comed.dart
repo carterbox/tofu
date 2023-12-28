@@ -406,8 +406,7 @@ class PriceClock extends StatelessWidget {
           barHeight = -1.0;
         }
         if (price == 0.0 || !price.isFinite) {
-          // Chart cannot render a zero height bar.
-          barHeight = 0.001;
+          barHeight = 0.0;
         }
         sections.add(chart.PieChartSectionData(
           value: 1,
