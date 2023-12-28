@@ -311,8 +311,7 @@ chart.PieChartSectionData createSection(
     barHeight = -1.0;
   }
   if (value == 0.0 || !value.isFinite) {
-    // Chart cannot render a zero height bar.
-    barHeight = 0.001;
+    barHeight = 0.0;
   }
   return chart.PieChartSectionData(
     value: 1,
