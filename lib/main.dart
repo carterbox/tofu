@@ -144,9 +144,9 @@ class HourlyEnergyRatesPage extends StatelessWidget {
             Row(
               children: [
                 if (layoutIsWide)
-                  const Expanded(
+                  Expanded(
                     flex: 13,
-                    child: Placeholder(),
+                    child: Container(),
                   ),
                 const Expanded(
                   flex: 21,
