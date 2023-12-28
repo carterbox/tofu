@@ -76,7 +76,9 @@ class SolarCircle extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double diameter =
-            radius * min(constraints.maxHeight, constraints.maxWidth);
+            2 * radius * max(constraints.maxHeight, constraints.maxWidth);
+        final double icon_size =
+            1 / 16 * min(constraints.maxHeight, constraints.maxWidth);
         return Stack(
           alignment: Alignment.center,
           children: [
@@ -102,21 +104,21 @@ class SolarCircle extends StatelessWidget {
                 width: diameter,
                 height: diameter,
                 child: Align(
-                    alignment: const Alignment(0.0, 0.5),
+                    alignment: const Alignment(0.0, 0.618),
                     child: Icon(
                       Icons.dark_mode_outlined,
                       color: dayColor,
-                      size: diameter / 5,
+                      size: icon_size,
                     ))),
             SizedBox(
               width: diameter,
               height: diameter,
               child: Align(
-                  alignment: const Alignment(0.0, -0.5),
+                  alignment: const Alignment(0.0, -0.618),
                   child: Icon(
                     Icons.light_mode,
                     color: nightColor,
-                    size: diameter / 5,
+                    size: icon_size,
                   )),
             ),
           ],

@@ -139,23 +139,42 @@ class HourlyEnergyRatesPage extends StatelessWidget {
         floatingActionButton:
             layoutIsWide ? null : const PriceClockExplainerButton(),
         drawer: const NavigationDrawer(0),
-        body: Row(
+        body: Stack(
           children: [
-            if (layoutIsWide)
-              const Expanded(
-                flex: 13,
-                child: PriceClockExplainer(),
-              ),
-            const Expanded(
-              flex: 21,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  StreamingSolarCircle(),
-                  StreamingPriceClock(),
-                ],
-              ),
+            Row(
+              children: [
+                if (layoutIsWide)
+                  const Expanded(
+                    flex: 13,
+                    child: Placeholder(),
+                  ),
+                const Expanded(
+                  flex: 21,
+                  child: StreamingSolarCircle(),
+                ),
+              ],
             ),
+            Row(
+              children: [
+                if (layoutIsWide)
+                  const Expanded(
+                    flex: 13,
+                    child: Column(
+                      children: [
+                        Expanded(child: PriceClockExplainer()),
+                      ],
+                    ),
+                  ),
+                const Expanded(
+                  flex: 21,
+                  child: Stack(
+                    children: [
+                      StreamingPriceClock(),
+                    ],
+                  ),
+                ),
+              ],
+            )
           ],
         ),
       );
@@ -194,7 +213,6 @@ class HistoricEnergyUsePage extends ConsumerWidget {
                     child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    const SolarCircle(radius: 0.255),
                     HistoricEnergyUseClock(state: state),
                   ],
                 )),
@@ -234,12 +252,10 @@ class StreamingSolarCircle extends ConsumerWidget {
           data: (data) => data,
         );
     return SolarCircle(
-      radius: 0.255,
+      radius: 2.0,
       today: dayInfo,
-      dayColor: const Color(0xFFF7CD5D)
-          .harmonizeWith(Theme.of(context).colorScheme.primary),
-      nightColor: const Color(0xFF041A40)
-          .harmonizeWith(Theme.of(context).colorScheme.primary),
+      dayColor: Theme.of(context).colorScheme.surface,
+      nightColor: Theme.of(context).colorScheme.surfaceVariant,
     );
   }
 }
