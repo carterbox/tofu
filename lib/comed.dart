@@ -520,11 +520,13 @@ class PriceClockLoading extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
       final diameter = min(constraints.maxHeight, constraints.maxWidth);
-      return SizedBox(
-        width: 0.25 * diameter,
-        height: 0.25 * diameter,
-        child: CircularProgressIndicator(
-          strokeWidth: 0.01 * diameter,
+      return Align(
+        child: SizedBox(
+          width: 0.25 * diameter,
+          height: 0.25 * diameter,
+          child: CircularProgressIndicator(
+            strokeWidth: 0.01 * diameter,
+          ),
         ),
       );
     });
