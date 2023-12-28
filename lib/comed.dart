@@ -414,11 +414,30 @@ class PriceClock extends StatelessWidget {
           showTitle:
               price.isFinite && (isCurrentHour || isImportant.contains(price)),
           title: '${price.toStringAsFixed(1)}${energyRates.units}',
+          titleStyle: TextStyle(
+            color: isCurrentHour
+                ? theme.colorScheme.onTertiaryContainer
+                : theme.colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.bold,
+            shadows: <Shadow>[
+              Shadow(
+                blurRadius: 2.0,
+                color: isCurrentHour
+                    ? theme.colorScheme.tertiaryContainer
+                    : theme.colorScheme.primaryContainer,
+              ),
+            ],
+          ),
           radius: outerRadius * barHeight / barHeightMaximum,
           titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
+          borderSide: BorderSide(
+            color: isCurrentHour
+                ? theme.colorScheme.onTertiaryContainer
+                : theme.colorScheme.onPrimaryContainer,
+          ),
           color: isCurrentHour
-              ? theme.colorScheme.inversePrimary
-              : theme.colorScheme.primary,
+              ? theme.colorScheme.tertiaryContainer
+              : theme.colorScheme.primaryContainer,
         ));
       }
       return chart.PieChart(
@@ -437,8 +456,9 @@ class PriceClockExplainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: Theme.of(context).dialogBackgroundColor,
+      color: colorScheme.primaryContainer,
       padding: const EdgeInsets.all(20),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,7 +469,7 @@ class PriceClockExplainer extends StatelessWidget {
             child: Text(
               'When should you run your appliances?',
               textAlign: TextAlign.left,
-              textScaleFactor: 2,
+              textScaler: TextScaler.linear(2.0),
             ),
           ),
           Padding(
@@ -457,7 +477,7 @@ class PriceClockExplainer extends StatelessWidget {
             child: Text(
               'Run your appliances when electricity rates are low.',
               textAlign: TextAlign.left,
-              textScaleFactor: 1,
+              textScaler: TextScaler.linear(1.0),
             ),
           ),
           Padding(
@@ -465,7 +485,7 @@ class PriceClockExplainer extends StatelessWidget {
             child: Text(
               'This chart shows the current and forecasted hourly average electricity prices for as much of the next 24 hours as possible in the Chicagoland ComEd energy market.',
               textAlign: TextAlign.left,
-              textScaleFactor: 1,
+              textScaler: TextScaler.linear(1.0),
             ),
           ),
         ],
