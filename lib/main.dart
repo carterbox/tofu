@@ -204,12 +204,21 @@ class HistoricEnergyUsePage extends ConsumerWidget {
 
     return LayoutBuilder(builder: (context, constraints) {
       final layoutIsWide = constraints.maxWidth > 600;
-
+      final colorScheme = Theme.of(context).colorScheme;
       Widget body = Row(children: [
         if (layoutIsWide)
-          const Expanded(
+          Expanded(
             flex: 13,
-            child: HistoricEnergyUseExplainer(),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: 600,
+                child: Card(
+                  color: colorScheme.primaryContainer,
+                  child: const HistoricEnergyUseExplainer(),
+                ),
+              ),
+            ),
           ),
         Expanded(
             flex: 21,
