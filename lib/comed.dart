@@ -23,7 +23,7 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -156,7 +156,7 @@ class EnergyRatesUpdate {
 /// average if the forecast is not null. Each API, the forecast and current
 /// hourly average are called separately and only as needed.
 Stream<EnergyRatesUpdate> streamRatesNextDay() async* {
-  final randomInt = Random();
+  final randomInt = math.Random();
   DateTime lastUpdate = DateTime(0);
   HourlyEnergyRates? forecast;
   while (true) {
@@ -365,6 +365,83 @@ class CentPerEnergyRates extends HourlyEnergyRates {
   }
 }
 
+/// Return the radial height of a ring given its area and inner radius
+double heightFromArea(
+  double innerRadius,
+  double area,
+) {
+  // Remove pi because it is a constant
+  // return math.sqrt(area / math.pi + innerRadius * innerRadius) - innerRadius;
+  return math.sqrt(area + innerRadius * innerRadius) - innerRadius;
+}
+
+/// Return the area of the ring between two radii in a circle
+double areaFromRadius(
+  double innerRadius,
+  double outerRadius,
+) {
+  // Remove pi because it is a constant
+  // return math.pi * (outerRadius * outerRadius - innerRadius * innerRadius);
+  return outerRadius * outerRadius - innerRadius * innerRadius;
+}
+
+chart.PieChartSectionData createSection({
+  required double value,
+  required String units,
+  required Color color,
+  required bool isImportant,
+  required double maxValue,
+  required double centerSpaceRadius,
+  required double barMaxRadialSize,
+  required Color colorText,
+  required Color colorTextShadow,
+  required Color colorBorder,
+}) {
+  if (value == 0.0 || !value.isFinite) {
+    return chart.PieChartSectionData(
+      value: 1,
+      showTitle: false,
+      color: Colors.transparent,
+    );
+  }
+  // Scale bar sections by area instead of linearly because their thickness
+  // increases as a function of radius.
+  double maxAllowedArea = areaFromRadius(
+    centerSpaceRadius,
+    centerSpaceRadius + barMaxRadialSize,
+  );
+  double barHeight = heightFromArea(
+    centerSpaceRadius,
+    value / maxValue * maxAllowedArea,
+  );
+  if (value < 0.0) {
+    // Large negative bars look really bad, so just set all negatives to a
+    // constant height.
+    barHeight = -0.1 * centerSpaceRadius;
+  }
+  return chart.PieChartSectionData(
+    value: 1,
+    showTitle: value.isFinite && isImportant,
+    title: '${value.toStringAsFixed(1)} $units',
+    radius: barHeight,
+    titlePositionPercentageOffset: 1 + 0.1 * barMaxRadialSize / barHeight,
+    color: color,
+    titleStyle: TextStyle(
+      color: colorText,
+      fontWeight: FontWeight.bold,
+      shadows: <Shadow>[
+        Shadow(
+          blurRadius: 2.0,
+          color: colorTextShadow,
+        ),
+      ],
+    ),
+    borderSide: BorderSide(
+      color: colorBorder,
+    ),
+  );
+}
+
 /// A circular bar chart showing the current and forecasted energy rates for a
 /// 24 hour period
 class PriceClock extends StatelessWidget {
@@ -382,16 +459,19 @@ class PriceClock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      final double diameter =
-          0.5 * min(constraints.maxHeight, constraints.maxWidth);
+      final double maxAllowedRadius = 0.5 *
+          math.min(
+            constraints.maxHeight,
+            constraints.maxWidth,
+          );
 
-      final innerRadius = diameter * radius * 0.25;
-      final outerRadius = diameter * radius * 0.75;
+      final centerSpaceRadius = maxAllowedRadius * 0.25;
+      final barMaxRadialSize = maxAllowedRadius - centerSpaceRadius;
 
       final theme = Theme.of(context);
       final double barHeightMaximum = (energyRates.rateHighThreshold * 1.1);
       var sections = List<chart.PieChartSectionData>.empty(growable: true);
-      final isImportant = energyRates.getHighlights();
+      final importantRates = energyRates.getHighlights();
       DateTime currentHour = convertToHourEnd(DateTime.now());
       for (int hour = 0; hour < 24; hour++) {
         final bool isCurrentHour = (hour == 0);
@@ -399,50 +479,31 @@ class PriceClock extends StatelessWidget {
             ? currentHourRate
             : energyRates.rates[currentHour.add(Duration(hours: hour))] ??
                 double.nan;
-
-        double barHeight = price;
-        if (price < 0.0) {
-          // Large negative bars look really bad.
-          barHeight = -1.0;
-        }
-        if (price == 0.0 || !price.isFinite) {
-          barHeight = 0.0;
-        }
-        sections.add(chart.PieChartSectionData(
-          value: 1,
-          showTitle:
-              price.isFinite && (isCurrentHour || isImportant.contains(price)),
-          title: '${price.toStringAsFixed(1)}${energyRates.units}',
-          titleStyle: TextStyle(
-            color: isCurrentHour
-                ? theme.colorScheme.onTertiaryContainer
-                : theme.colorScheme.onPrimaryContainer,
-            fontWeight: FontWeight.bold,
-            shadows: <Shadow>[
-              Shadow(
-                blurRadius: 2.0,
-                color: isCurrentHour
-                    ? theme.colorScheme.tertiaryContainer
-                    : theme.colorScheme.primaryContainer,
-              ),
-            ],
-          ),
-          radius: outerRadius * barHeight / barHeightMaximum,
-          titlePositionPercentageOffset: 1 + 0.1 * barHeightMaximum / barHeight,
-          borderSide: BorderSide(
-            color: isCurrentHour
-                ? theme.colorScheme.onTertiaryContainer
-                : theme.colorScheme.onPrimaryContainer,
-          ),
+        sections.add(createSection(
+          value: price,
+          units: energyRates.units,
+          colorText: isCurrentHour
+              ? theme.colorScheme.onTertiaryContainer
+              : theme.colorScheme.onPrimaryContainer,
+          colorTextShadow: isCurrentHour
+              ? theme.colorScheme.tertiaryContainer
+              : theme.colorScheme.primaryContainer,
+          colorBorder: isCurrentHour
+              ? theme.colorScheme.onTertiaryContainer
+              : theme.colorScheme.onPrimaryContainer,
           color: isCurrentHour
               ? theme.colorScheme.tertiaryContainer
               : theme.colorScheme.primaryContainer,
+          isImportant: isCurrentHour || importantRates.contains(price),
+          maxValue: barHeightMaximum,
+          centerSpaceRadius: centerSpaceRadius,
+          barMaxRadialSize: barMaxRadialSize,
         ));
       }
       return chart.PieChart(
         chart.PieChartData(
           sections: sections,
-          centerSpaceRadius: innerRadius,
+          centerSpaceRadius: centerSpaceRadius,
           startDegreeOffset: (360 / 24) * (currentHour.hour + 5),
         ),
       );
@@ -519,7 +580,7 @@ class PriceClockLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      final diameter = min(constraints.maxHeight, constraints.maxWidth);
+      final diameter = math.min(constraints.maxHeight, constraints.maxWidth);
       return Align(
         child: SizedBox(
           width: 0.25 * diameter,
