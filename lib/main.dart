@@ -131,6 +131,7 @@ class HourlyEnergyRatesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
+      final colorScheme = Theme.of(context).colorScheme;
       final layoutIsWide = constraints.maxWidth > 600;
       return Scaffold(
         appBar: AppBar(
@@ -144,9 +145,9 @@ class HourlyEnergyRatesPage extends StatelessWidget {
             Row(
               children: [
                 if (layoutIsWide)
-                  const Expanded(
+                  Expanded(
                     flex: 13,
-                    child: Placeholder(),
+                    child: Container(),
                   ),
                 const Expanded(
                   flex: 21,
@@ -157,12 +158,17 @@ class HourlyEnergyRatesPage extends StatelessWidget {
             Row(
               children: [
                 if (layoutIsWide)
-                  const Expanded(
+                  Expanded(
                     flex: 13,
-                    child: Column(
-                      children: [
-                        Expanded(child: PriceClockExplainer()),
-                      ],
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: 600,
+                        child: Card(
+                          color: colorScheme.primaryContainer,
+                          child: const PriceClockExplainer(),
+                        ),
+                      ),
                     ),
                   ),
                 const Expanded(
@@ -198,12 +204,21 @@ class HistoricEnergyUsePage extends ConsumerWidget {
 
     return LayoutBuilder(builder: (context, constraints) {
       final layoutIsWide = constraints.maxWidth > 600;
-
+      final colorScheme = Theme.of(context).colorScheme;
       Widget body = Row(children: [
         if (layoutIsWide)
-          const Expanded(
+          Expanded(
             flex: 13,
-            child: HistoricEnergyUseExplainer(),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: 600,
+                child: Card(
+                  color: colorScheme.primaryContainer,
+                  child: const HistoricEnergyUseExplainer(),
+                ),
+              ),
+            ),
           ),
         Expanded(
             flex: 21,
