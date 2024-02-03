@@ -442,6 +442,23 @@ chart.PieChartSectionData createSection({
   );
 }
 
+double createOffset({
+  required double value,
+  required double maxValue,
+  required double centerSpaceRadius,
+  required double barMaxRadialSize,
+}) {
+  if (value == 0.0 || !value.isFinite) {
+    return 0.0;
+  }
+  if (value < 0.0) {
+    // Large negative bars look really bad, so just set all negatives to a
+    // constant height.
+    return -0.1 * centerSpaceRadius;
+  }
+  return value / maxValue * barMaxRadialSize;
+}
+
 /// A circular bar chart showing the current and forecasted energy rates for a
 /// 24 hour period
 class PriceClock extends StatelessWidget {

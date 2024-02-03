@@ -22,16 +22,16 @@
 /// at 1:00 pm, the price is the average from 12:00 pm to 1:00 pm.
 
 import 'dart:io';
-import 'dart:math';
+import 'dart:math' as math;
 import 'dart:convert';
 
-import 'package:collection/collection.dart';
-import 'package:fl_chart/fl_chart.dart' as chart;
-import 'package:flutter/material.dart';
+import 'package:electricity_clock/comed.dart';
+import 'package:electricity_clock/polar.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:fl_chart/fl_chart.dart' as chart;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 import 'package:logging/logging.dart' as logging;
-import 'comed.dart';
 
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -46,7 +46,7 @@ Future<String> loadPlaceholderGreenbutton() async {
 class HourlyEnergyUse {
   final String units = 'kWh';
 
-  final double rateHighThreshold = 1.0;
+  final double rateHighThreshold = 2.0;
 
   /// How much energy was used in [units]
   final Map<DateTime, double> usage;
@@ -320,9 +320,13 @@ class Legend extends StatelessWidget {
         backgroundColor: Colors.transparent,
       ));
     }
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: chips,
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Wrap(
+        spacing: 5.0,
+        runSpacing: 5.0,
+        children: chips,
+      ),
     );
   }
 }
@@ -342,20 +346,10 @@ class HistoricEnergyUseClock extends StatelessWidget {
     final theme = Theme.of(context);
     return Stack(
       children: [
-        Legend(
-          labels: const [
-            'Energy Use',
-            'Energy Rates',
-          ],
-          colors: [
-            theme.colorScheme.secondary,
-            theme.colorScheme.primary,
-          ],
-        ),
         LayoutBuilder(builder: (context, constraints) {
           final theme = Theme.of(context);
-          final double maxAllowedRadius = 0.5 *
-              min(
+          final double maxAllowedRadius = 0.4 *
+              math.min(
                 constraints.maxHeight,
                 constraints.maxWidth,
               );
@@ -363,49 +357,62 @@ class HistoricEnergyUseClock extends StatelessWidget {
           final centerSpaceRadius = maxAllowedRadius * 0.25;
           final barMaxRadialSize = maxAllowedRadius - centerSpaceRadius;
 
-          final double maximumUsage =
-              (state.filteredHistoricEnergyUse.rateHighThreshold * 1.1);
-          final double maximumRates =
-              (state.filteredHistoricEnergyRates.rateHighThreshold * 1.1);
-          var sections = List<chart.PieChartSectionData>.empty(growable: true);
           final usage = state.filteredHistoricEnergyUse.hourlyAverages();
           final rates = state.filteredHistoricEnergyRates.hourlyAverages();
-          final importantUsage = getHighlights(usage);
+          final double maximumUsage =
+              usage.reduce((max, element) => element > max ? element : max);
+          final double maximumRates =
+              rates.reduce((max, element) => element > max ? element : max);
+          var sections = List<chart.PieChartSectionData>.empty(growable: true);
+          var offsets = List<double>.empty(growable: true);
+          // final importantUsage = getHighlights(usage);
           final importantRates = getHighlights(rates);
           for (int hour = 0; hour < 24; hour++) {
-            sections.add(createSection(
+            offsets.add(createOffset(
               value: usage[hour],
-              units: state.historicEnergyUse.units,
-              color: theme.colorScheme.secondary,
-              isImportant: importantUsage.contains(usage[hour]),
-              barMaxRadialSize: barMaxRadialSize,
-              centerSpaceRadius: centerSpaceRadius,
               maxValue: maximumUsage,
-              colorBorder: Colors.black,
-              colorText:  Colors.black,
-              colorTextShadow: Colors.black,
+              centerSpaceRadius: centerSpaceRadius,
+              barMaxRadialSize: barMaxRadialSize,
             ));
             sections.add(createSection(
               value: rates[hour],
               units: state.historicEnergyRates.units,
-              color: theme.colorScheme.primary,
+              color: theme.colorScheme.primaryContainer,
               isImportant: importantRates.contains(rates[hour]),
               barMaxRadialSize: barMaxRadialSize,
               centerSpaceRadius: centerSpaceRadius,
               maxValue: maximumRates,
-              colorBorder: Colors.black,
-              colorText:  Colors.black,
-              colorTextShadow: Colors.black,
+              colorBorder: theme.colorScheme.onPrimaryContainer,
+              colorText: theme.colorScheme.onPrimaryContainer,
+              colorTextShadow: theme.colorScheme.primaryContainer,
             ));
           }
-          return chart.PieChart(
-            chart.PieChartData(
-              sections: sections,
-              centerSpaceRadius: centerSpaceRadius,
-              startDegreeOffset: (360 / 24) * 5,
+          return Stack(children: [
+            chart.PieChart(
+              chart.PieChartData(
+                sections: sections,
+                centerSpaceRadius: centerSpaceRadius,
+                startDegreeOffset: (360 / 24) * 5,
+              ),
             ),
-          );
+            PolarLineChart(
+              radius: centerSpaceRadius,
+              offsets: offsets,
+              color: theme.colorScheme.tertiaryContainer,
+              startRadianOffset: math.pi / 24 * 11,
+            ),
+          ]);
         }),
+        Legend(
+          labels: const [
+            'Energy Use',
+            'Energy Rates',
+          ],
+          colors: [
+            theme.colorScheme.tertiaryContainer,
+            theme.colorScheme.primaryContainer,
+          ],
+        ),
       ],
     );
   }
