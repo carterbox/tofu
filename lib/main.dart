@@ -133,6 +133,47 @@ class HourlyEnergyRatesPage extends StatelessWidget {
     return LayoutBuilder(builder: (context, constraints) {
       final colorScheme = Theme.of(context).colorScheme;
       final layoutIsWide = constraints.maxWidth > 600;
+      Widget body = Stack(
+        children: [
+          Row(
+            children: [
+              if (layoutIsWide)
+                Expanded(
+                  flex: 13,
+                  child: Container(),
+                ),
+              const Expanded(
+                flex: 21,
+                child: StreamingSolarCircle(),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              if (layoutIsWide)
+                Expanded(
+                  flex: 13,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: 600,
+                      child: Card(
+                        color: colorScheme.primaryContainer,
+                        child: const PriceClockExplainer(),
+                      ),
+                    ),
+                  ),
+                ),
+              const Expanded(
+                flex: 21,
+                child: Stack(
+                  children: [StreamingPriceClock()],
+                ),
+              ),
+            ],
+          )
+        ],
+      );
       return Scaffold(
         appBar: AppBar(
           title: Text(title),
@@ -140,49 +181,7 @@ class HourlyEnergyRatesPage extends StatelessWidget {
         floatingActionButton:
             layoutIsWide ? null : const PriceClockExplainerButton(),
         drawer: const NavigationDrawer(0),
-        body: Stack(
-          children: [
-            Row(
-              children: [
-                if (layoutIsWide)
-                  Expanded(
-                    flex: 13,
-                    child: Container(),
-                  ),
-                const Expanded(
-                  flex: 21,
-                  child: StreamingSolarCircle(),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                if (layoutIsWide)
-                  Expanded(
-                    flex: 13,
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: SizedBox(
-                        width: 600,
-                        child: Card(
-                          color: colorScheme.primaryContainer,
-                          child: const PriceClockExplainer(),
-                        ),
-                      ),
-                    ),
-                  ),
-                const Expanded(
-                  flex: 21,
-                  child: Stack(
-                    children: [
-                      StreamingPriceClock(),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
+        body: body,
       );
     });
   }
@@ -205,38 +204,51 @@ class HistoricEnergyUsePage extends ConsumerWidget {
     return LayoutBuilder(builder: (context, constraints) {
       final layoutIsWide = constraints.maxWidth > 600;
       final colorScheme = Theme.of(context).colorScheme;
-      Widget body = Row(children: [
-        if (layoutIsWide)
-          Expanded(
-            flex: 13,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(
-                width: 600,
-                child: Card(
-                  color: colorScheme.primaryContainer,
-                  child: const HistoricEnergyUseExplainer(),
+      Widget body = Stack(
+        children: [
+          Row(
+            children: [
+              if (layoutIsWide)
+                Expanded(
+                  flex: 13,
+                  child: Container(),
+                ),
+              Expanded(
+                flex: 21,
+                child: SolarCircle(
+                  radius: 2.0,
+                  dayColor: colorScheme.surface,
+                  nightColor: colorScheme.surfaceVariant,
                 ),
               ),
-            ),
+            ],
           ),
-        Expanded(
-            flex: 21,
-            child: Column(
-              children: [
+          Row(
+            children: [
+              if (layoutIsWide)
                 Expanded(
-                    child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    HistoricEnergyUseClock(state: state),
-                  ],
-                )),
-                HistoricEnergyUseClockController(
-                    stateProvider: energyUseProvider)
-              ],
-            )),
-      ]);
-
+                  flex: 13,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: 600,
+                      child: Card(
+                        color: colorScheme.primaryContainer,
+                        child: const HistoricEnergyUseExplainer(),
+                      ),
+                    ),
+                  ),
+                ),
+              Expanded(
+                flex: 21,
+                child: Stack(
+                  children: [HistoricEnergyUseClock(state: state)],
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
       return Scaffold(
         appBar: AppBar(
           title: Text(title),
