@@ -253,8 +253,18 @@ class HistoricEnergyUsePage extends ConsumerWidget {
         appBar: AppBar(
           title: Text(title),
         ),
-        floatingActionButton:
-            layoutIsWide ? null : const HistoricEnergyUseExplainerButton(),
+        floatingActionButton: layoutIsWide
+            ? const HistoricEnergyUseClockControllerButton()
+            : const Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  HistoricEnergyUseExplainerButton(),
+                  SizedBox(
+                    height: 8,
+                  ),
+                  HistoricEnergyUseClockControllerButton(),
+                ],
+              ),
         drawer: const NavigationDrawer(1),
         body: body,
       );

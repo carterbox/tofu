@@ -578,7 +578,8 @@ class HistoricEnergyUseExplainerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return FloatingActionButton(
+    return FloatingActionButton.small(
+      heroTag: 'explainer',
       child: const Icon(Icons.question_mark),
       onPressed: () {
         showModalBottomSheet<void>(
@@ -589,6 +590,18 @@ class HistoricEnergyUseExplainerButton extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class HistoricEnergyUseClockControllerButton extends StatelessWidget {
+  const HistoricEnergyUseClockControllerButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: 'controller',
+      onPressed: () {},
     );
   }
 }
