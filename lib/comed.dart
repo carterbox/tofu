@@ -577,6 +577,7 @@ class PriceClockExplainerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return FloatingActionButton(
+      tooltip: 'Explain this chart.',
       heroTag: 'explainer',
       child: const Icon(Icons.question_mark),
       onPressed: () {

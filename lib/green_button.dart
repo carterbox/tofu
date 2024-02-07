@@ -579,6 +579,7 @@ class HistoricEnergyUseExplainerButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return FloatingActionButton.small(
+      tooltip: 'Explain this chart.',
       heroTag: 'explainer',
       child: const Icon(Icons.question_mark),
       onPressed: () {
@@ -600,7 +601,9 @@ class HistoricEnergyUseClockControllerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
+      tooltip: 'Filter the data.',
       heroTag: 'controller',
+      child: const Icon(Icons.filter_list),
       onPressed: () {},
     );
   }
