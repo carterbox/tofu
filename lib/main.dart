@@ -192,6 +192,34 @@ final energyUseProvider = StateNotifierProvider<HistoricEnergyUseClockNotifier,
   return HistoricEnergyUseClockNotifier();
 });
 
+class HistoricEnergyUseClockControllerButton extends StatelessWidget {
+  const HistoricEnergyUseClockControllerButton({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      tooltip: 'Load and filter data',
+      heroTag: 'controller',
+      child: const Icon(Icons.filter_list),
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => Scaffold(
+              appBar: AppBar(
+                title: const Text('Filter Settings'),
+              ),
+              body: HistoricEnergyUseClockController(
+                  stateProvider: energyUseProvider),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class HistoricEnergyUsePage extends ConsumerWidget {
   const HistoricEnergyUsePage({super.key});
 
