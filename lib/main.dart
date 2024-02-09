@@ -16,16 +16,17 @@
 
 import 'dart:io';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:electricity_clock/comed.dart';
-import 'package:electricity_clock/solar.dart';
-import 'package:electricity_clock/theme.dart';
-import 'package:electricity_clock/green_button.dart';
 import 'package:window_size/window_size.dart';
+
+import 'theme.dart';
+import 'widgets/forecast.dart';
+import 'widgets/historic.dart';
+import 'widgets/solar.dart';
 
 void main() {
   Logger.root.onRecord.listen((record) {
@@ -187,47 +188,13 @@ class HourlyEnergyRatesPage extends StatelessWidget {
   }
 }
 
-final energyUseProvider = StateNotifierProvider<HistoricEnergyUseClockNotifier,
-    HistoricEnergyUseClockState>((ref) {
-  return HistoricEnergyUseClockNotifier();
-});
-
-class HistoricEnergyUseClockControllerButton extends StatelessWidget {
-  const HistoricEnergyUseClockControllerButton({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton(
-      tooltip: 'Load and filter data',
-      heroTag: 'controller',
-      child: const Icon(Icons.filter_list),
-      onPressed: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => Scaffold(
-              appBar: AppBar(
-                title: const Text('Filter Settings'),
-              ),
-              body: HistoricEnergyUseClockController(
-                  stateProvider: energyUseProvider),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class HistoricEnergyUsePage extends ConsumerWidget {
+class HistoricEnergyUsePage extends StatelessWidget {
   const HistoricEnergyUsePage({super.key});
 
   final String title = 'Historic Energy Use';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    HistoricEnergyUseClockState state = ref.watch(energyUseProvider);
+  Widget build(BuildContext context) {
 
     return LayoutBuilder(builder: (context, constraints) {
       final layoutIsWide = constraints.maxWidth > 600;
@@ -267,10 +234,10 @@ class HistoricEnergyUsePage extends ConsumerWidget {
                     ),
                   ),
                 ),
-              Expanded(
+              const Expanded(
                 flex: 21,
                 child: Stack(
-                  children: [HistoricEnergyUseClock(state: state)],
+                  children: [HistoricEnergyUseClock()],
                 ),
               ),
             ],
@@ -297,52 +264,5 @@ class HistoricEnergyUsePage extends ConsumerWidget {
         body: body,
       );
     });
-  }
-}
-
-final streamOfDayInfo = StreamProvider<DayInfo>((ref) async* {
-  await for (final day in streamSunriseSunset()) {
-    yield day;
-  }
-});
-
-class StreamingSolarCircle extends ConsumerWidget {
-  const StreamingSolarCircle({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dayInfo = ref.watch(streamOfDayInfo).when(
-          error: (error, stackTrace) => const DayInfo(length: 12, sunrise: 6),
-          loading: () => const DayInfo(length: 12, sunrise: 6),
-          data: (data) => data,
-        );
-    return SolarCircle(
-      radius: 2.0,
-      today: dayInfo,
-      dayColor: Theme.of(context).colorScheme.surface,
-      nightColor: Theme.of(context).colorScheme.surfaceVariant,
-    );
-  }
-}
-
-final streamOfEnergyRates = StreamProvider<EnergyRatesUpdate>((ref) async* {
-  await for (final rate in streamRatesNextDay()) {
-    yield rate;
-  }
-});
-
-class StreamingPriceClock extends ConsumerWidget {
-  const StreamingPriceClock({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ref.watch(streamOfEnergyRates).when(
-          error: (error, stackTrace) => const PriceClockLoading(),
-          loading: () => const PriceClockLoading(),
-          data: (data) => PriceClock(
-            energyRates: data.forecast,
-            currentHourRate: data.currentHour,
-          ),
-        );
   }
 }

@@ -1,6 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 
 class PolarLineChart extends StatelessWidget {
   final double radius;

@@ -16,10 +16,14 @@
 
 /// Draw a small circle indicating sun schedule.
 
+library;
+
+import 'dart:math';
+
 import 'package:fl_chart/fl_chart.dart' as chart;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:sunrise_sunset_calc/sunrise_sunset_calc.dart';
-import 'dart:math';
 
 /// Represents the time of [sunrise] and [length] of the day in hours
 class DayInfo {
@@ -77,7 +81,7 @@ class SolarCircle extends StatelessWidget {
       builder: (context, constraints) {
         final double diameter =
             2 * radius * max(constraints.maxHeight, constraints.maxWidth);
-        final double icon_size =
+        final double iconSize =
             1 / 16 * min(constraints.maxHeight, constraints.maxWidth);
         return Stack(
           alignment: Alignment.center,
@@ -108,7 +112,7 @@ class SolarCircle extends StatelessWidget {
                     child: Icon(
                       Icons.dark_mode_outlined,
                       color: dayColor,
-                      size: icon_size,
+                      size: iconSize,
                     ))),
             SizedBox(
               width: diameter,
@@ -118,7 +122,7 @@ class SolarCircle extends StatelessWidget {
                   child: Icon(
                     Icons.light_mode,
                     color: nightColor,
-                    size: icon_size,
+                    size: iconSize,
                   )),
             ),
           ],
@@ -128,5 +132,27 @@ class SolarCircle extends StatelessWidget {
   }
 }
 
+final streamOfDayInfo = StreamProvider<DayInfo>((ref) async* {
+  await for (final day in streamSunriseSunset()) {
+    yield day;
+  }
+});
 
-//
+class StreamingSolarCircle extends ConsumerWidget {
+  const StreamingSolarCircle({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dayInfo = ref.watch(streamOfDayInfo).when(
+          error: (error, stackTrace) => const DayInfo(length: 12, sunrise: 6),
+          loading: () => const DayInfo(length: 12, sunrise: 6),
+          data: (data) => data,
+        );
+    return SolarCircle(
+      radius: 2.0,
+      today: dayInfo,
+      dayColor: Theme.of(context).colorScheme.surface,
+      nightColor: Theme.of(context).colorScheme.surfaceVariant,
+    );
+  }
+}

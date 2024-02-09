@@ -4,12 +4,14 @@ class TofuAppTheme {
   static ThemeData lightTheme(ColorScheme? lightColorScheme){
     return ThemeData.from(
         colorScheme: lightColorScheme ?? tofuLightColorScheme,
+        useMaterial3: true,
       );
   }
 
   static ThemeData darkTheme(ColorScheme? darkColorScheme){
     return ThemeData.from(
         colorScheme: darkColorScheme ?? tofuDarkColorScheme,
+        useMaterial3: true,
       );
   }
 }
