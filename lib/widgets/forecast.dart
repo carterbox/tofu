@@ -1,32 +1,29 @@
+// electricity_clock, an app for monitorign time-of-use electricity rates
+// Copyright (C) 2022 Daniel Jackson Ching
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+/// Provides a widget showing the forecasted electricity rates for 24 hours
+
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart' as chart;
 import 'dart:math' as math;
 
 import '../data/comed.dart';
-
-
-final streamOfEnergyRates = StreamProvider<EnergyRatesUpdate>((ref) async* {
-  await for (final rate in streamRatesNextDay()) {
-    yield rate;
-  }
-});
-
-class StreamingPriceClock extends ConsumerWidget {
-  const StreamingPriceClock({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ref.watch(streamOfEnergyRates).when(
-          error: (error, stackTrace) => const PriceClockLoading(),
-          loading: () => const PriceClockLoading(),
-          data: (data) => PriceClock(
-            energyRates: data.forecast,
-            currentHourRate: data.currentHour,
-          ),
-        );
-  }
-}
 
 /// A circular bar chart showing the current and forecasted energy rates for a
 /// 24 hour period
@@ -97,6 +94,49 @@ class PriceClock extends StatelessWidget {
   }
 }
 
+/// A placeholder for when the forecasted energy rates are not yet known
+class PriceClockLoading extends StatelessWidget {
+  const PriceClockLoading({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final diameter = math.min(constraints.maxHeight, constraints.maxWidth);
+      return Align(
+        child: SizedBox(
+          width: 0.25 * diameter,
+          height: 0.25 * diameter,
+          child: CircularProgressIndicator(
+            strokeWidth: 0.01 * diameter,
+          ),
+        ),
+      );
+    });
+  }
+}
+
+final streamOfEnergyRates = StreamProvider<EnergyRatesUpdate>((ref) async* {
+  await for (final rate in streamRatesNextDay()) {
+    yield rate;
+  }
+});
+
+class StreamingPriceClock extends ConsumerWidget {
+  const StreamingPriceClock({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(streamOfEnergyRates).when(
+          error: (error, stackTrace) => const PriceClockLoading(),
+          loading: () => const PriceClockLoading(),
+          data: (data) => PriceClock(
+            energyRates: data.forecast,
+            currentHourRate: data.currentHour,
+          ),
+        );
+  }
+}
+
 class PriceClockExplainer extends StatelessWidget {
   const PriceClockExplainer({super.key});
 
@@ -159,25 +199,5 @@ class PriceClockExplainerButton extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-class PriceClockLoading extends StatelessWidget {
-  const PriceClockLoading({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      final diameter = math.min(constraints.maxHeight, constraints.maxWidth);
-      return Align(
-        child: SizedBox(
-          width: 0.25 * diameter,
-          height: 0.25 * diameter,
-          child: CircularProgressIndicator(
-            strokeWidth: 0.01 * diameter,
-          ),
-        ),
-      );
-    });
   }
 }

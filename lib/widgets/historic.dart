@@ -10,10 +10,38 @@ import 'polar.dart';
 import 'dart:math' as math;
 import 'dart:io';
 
-final energyUseProvider = StateNotifierProvider<HistoricEnergyUseClockNotifier,
-    HistoricEnergyUseClockState>((ref) {
-  return HistoricEnergyUseClockNotifier();
-});
+class Legend extends StatelessWidget {
+  final List<String> labels;
+  final List<Color> colors;
+
+  const Legend({
+    super.key,
+    required this.labels,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    var chips = <Chip>[];
+    for (var i = 0; i < labels.length; ++i) {
+      chips.add(Chip(
+        avatar: CircleAvatar(
+          backgroundColor: colors[i],
+        ),
+        label: Text(labels[i]),
+        backgroundColor: Colors.transparent,
+      ));
+    }
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Wrap(
+        spacing: 5.0,
+        runSpacing: 5.0,
+        children: chips,
+      ),
+    );
+  }
+}
 
 @immutable
 class HistoricEnergyUseClockState {
@@ -66,67 +94,6 @@ class HistoricEnergyUseClockState {
   }
 }
 
-class HistoricEnergyUseClockControllerButton extends StatelessWidget {
-  const HistoricEnergyUseClockControllerButton({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    Widget controller = Scaffold(
-      appBar: AppBar(
-        title: const Text('Filter Settings'),
-      ),
-      body: HistoricEnergyUseClockController(stateProvider: energyUseProvider),
-    );
-    return FloatingActionButton(
-      tooltip: 'Load and filter data',
-      heroTag: 'controller',
-      child: const Icon(Icons.filter_list),
-      onPressed: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => controller,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class Legend extends StatelessWidget {
-  final List<String> labels;
-  final List<Color> colors;
-
-  const Legend({
-    super.key,
-    required this.labels,
-    required this.colors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    var chips = <Chip>[];
-    for (var i = 0; i < labels.length; ++i) {
-      chips.add(Chip(
-        avatar: CircleAvatar(
-          backgroundColor: colors[i],
-        ),
-        label: Text(labels[i]),
-        backgroundColor: Colors.transparent,
-      ));
-    }
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Wrap(
-        spacing: 5.0,
-        runSpacing: 5.0,
-        children: chips,
-      ),
-    );
-  }
-}
-
 class HistoricEnergyUseClock extends StatelessWidget {
   final double radius;
   final HistoricEnergyUseClockState? state;
@@ -143,7 +110,7 @@ class HistoricEnergyUseClock extends StatelessWidget {
     return Stack(
       children: [
         LayoutBuilder(builder: (context, constraints) {
-          if (state == null ){
+          if (state == null) {
             return const Placeholder();
           }
 
@@ -218,6 +185,24 @@ class HistoricEnergyUseClock extends StatelessWidget {
   }
 }
 
+class HistoricEnergyUseClockLoading extends StatelessWidget {
+  const HistoricEnergyUseClockLoading({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+
+class HistoricEnergyUseClockError extends StatelessWidget {
+  const HistoricEnergyUseClockError({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Placeholder();
+  }
+}
+
 class HistoricEnergyUseClockNotifier
     extends StateNotifier<HistoricEnergyUseClockState> {
   HistoricEnergyUseClockNotifier()
@@ -242,6 +227,11 @@ class HistoricEnergyUseClockNotifier
     );
   }
 }
+
+final energyUseProvider = StateNotifierProvider<HistoricEnergyUseClockNotifier,
+    HistoricEnergyUseClockState>((ref) {
+  return HistoricEnergyUseClockNotifier();
+});
 
 class HistoricEnergyUseClockController extends ConsumerWidget {
   final StateNotifierProvider<HistoricEnergyUseClockNotifier,
@@ -334,6 +324,34 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
           const SizedBox(height: 10.0),
         ],
       ),
+    );
+  }
+}
+
+class HistoricEnergyUseClockControllerButton extends StatelessWidget {
+  const HistoricEnergyUseClockControllerButton({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget controller = Scaffold(
+      appBar: AppBar(
+        title: const Text('Filter Settings'),
+      ),
+      body: HistoricEnergyUseClockController(stateProvider: energyUseProvider),
+    );
+    return FloatingActionButton(
+      tooltip: 'Load and filter data',
+      heroTag: 'controller',
+      child: const Icon(Icons.filter_list),
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => controller,
+          ),
+        );
+      },
     );
   }
 }

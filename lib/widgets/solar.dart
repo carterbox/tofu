@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-/// Draw a small circle indicating sun schedule.
+/// Provides a widget representing the sunrise and sunset schedule
 
 library;
 
@@ -52,15 +52,10 @@ class DayInfo {
   }
 }
 
-// Yield updated DayInfo every 24 hours
-Stream<DayInfo> streamSunriseSunset() async* {
-  while (true) {
-    yield DayInfo.forToday();
-    await Future.delayed(const Duration(hours: 24));
-  }
-}
-
 /// A widget representing the ratio of daytime to nighttime for [today].
+///
+/// The widget is a pie chart with two sections: a section containing a moon
+/// section for night and a section containing a sun icon for day.
 class SolarCircle extends StatelessWidget {
   final double radius;
   final DayInfo today;
@@ -129,6 +124,14 @@ class SolarCircle extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+// Yield updated DayInfo every 24 hours
+Stream<DayInfo> streamSunriseSunset() async* {
+  while (true) {
+    yield DayInfo.forToday();
+    await Future.delayed(const Duration(hours: 24));
   }
 }
 
