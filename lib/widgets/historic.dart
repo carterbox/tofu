@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fl_chart/fl_chart.dart' as chart;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../data/green_button.dart';
 import '../data/comed.dart';
@@ -9,6 +10,8 @@ import 'polar.dart';
 
 import 'dart:math' as math;
 import 'dart:io';
+
+part 'historic.g.dart';
 
 class Legend extends StatelessWidget {
   final List<String> labels;
@@ -94,82 +97,21 @@ class HistoricEnergyUseClockState {
   }
 }
 
-class HistoricEnergyUseClock extends StatelessWidget {
-  final double radius;
-  final HistoricEnergyUseClockState? state;
-
+class HistoricEnergyUseClock extends ConsumerWidget {
   const HistoricEnergyUseClock({
     super.key,
-    this.state,
-    this.radius = 1.0,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    HistoricEnergyUseClockState? state =
+        ref.watch(historicEnergyUseClockNotifierProvider);
     return Stack(
       children: [
-        LayoutBuilder(builder: (context, constraints) {
-          if (state == null) {
-            return const Placeholder();
-          }
-
-          final theme = Theme.of(context);
-          final double maxAllowedRadius = 0.4 *
-              math.min(
-                constraints.maxHeight,
-                constraints.maxWidth,
-              );
-
-          final centerSpaceRadius = maxAllowedRadius * 0.25;
-          final barMaxRadialSize = maxAllowedRadius - centerSpaceRadius;
-
-          final usage = state!.filteredHistoricEnergyUse.hourlyAverages();
-          final rates = state!.filteredHistoricEnergyRates.hourlyAverages();
-          final double maximumUsage =
-              usage.reduce((max, element) => element > max ? element : max);
-          final double maximumRates =
-              rates.reduce((max, element) => element > max ? element : max);
-          var sections = List<chart.PieChartSectionData>.empty(growable: true);
-          var offsets = List<double>.empty(growable: true);
-          // final importantUsage = getHighlights(usage);
-          final importantRates = getHighlights(rates);
-          for (int hour = 0; hour < 24; hour++) {
-            offsets.add(createOffset(
-              value: usage[hour],
-              maxValue: maximumUsage,
-              centerSpaceRadius: centerSpaceRadius,
-              barMaxRadialSize: barMaxRadialSize,
-            ));
-            sections.add(createSection(
-              value: rates[hour],
-              units: state!.historicEnergyRates.units,
-              color: theme.colorScheme.primaryContainer,
-              isImportant: importantRates.contains(rates[hour]),
-              barMaxRadialSize: barMaxRadialSize,
-              centerSpaceRadius: centerSpaceRadius,
-              maxValue: maximumRates,
-              colorBorder: theme.colorScheme.onPrimaryContainer,
-              colorText: theme.colorScheme.onPrimaryContainer,
-              colorTextShadow: theme.colorScheme.primaryContainer,
-            ));
-          }
-          return Stack(children: [
-            chart.PieChart(
-              chart.PieChartData(
-                sections: sections,
-                centerSpaceRadius: centerSpaceRadius,
-                startDegreeOffset: (360 / 24) * 5,
-              ),
-            ),
-            PolarLineChart(
-              radius: centerSpaceRadius,
-              offsets: offsets,
-              color: theme.colorScheme.tertiaryContainer,
-              startRadianOffset: math.pi / 24 * 11,
-            ),
-          ]);
-        }),
+        (state != null)
+            ? HistoricEnergyUseClockLoaded(state)
+            : const HistoricEnergyUseClockError(),
         Legend(
           labels: const [
             'Energy Use',
@@ -182,6 +124,76 @@ class HistoricEnergyUseClock extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class HistoricEnergyUseClockLoaded extends StatelessWidget {
+  final HistoricEnergyUseClockState state;
+
+  const HistoricEnergyUseClockLoaded(
+    this.state, {
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final theme = Theme.of(context);
+      final double maxAllowedRadius = 0.4 *
+          math.min(
+            constraints.maxHeight,
+            constraints.maxWidth,
+          );
+
+      final centerSpaceRadius = maxAllowedRadius * 0.25;
+      final barMaxRadialSize = maxAllowedRadius - centerSpaceRadius;
+
+      final usage = state.filteredHistoricEnergyUse.hourlyAverages();
+      final rates = state.filteredHistoricEnergyRates.hourlyAverages();
+      final double maximumUsage =
+          usage.reduce((max, element) => element > max ? element : max);
+      final double maximumRates =
+          rates.reduce((max, element) => element > max ? element : max);
+      var sections = List<chart.PieChartSectionData>.empty(growable: true);
+      var offsets = List<double>.empty(growable: true);
+      // final importantUsage = getHighlights(usage);
+      final importantRates = getHighlights(rates);
+      for (int hour = 0; hour < 24; hour++) {
+        offsets.add(createOffset(
+          value: usage[hour],
+          maxValue: maximumUsage,
+          centerSpaceRadius: centerSpaceRadius,
+          barMaxRadialSize: barMaxRadialSize,
+        ));
+        sections.add(createSection(
+          value: rates[hour],
+          units: state.historicEnergyRates.units,
+          color: theme.colorScheme.primaryContainer,
+          isImportant: importantRates.contains(rates[hour]),
+          barMaxRadialSize: barMaxRadialSize,
+          centerSpaceRadius: centerSpaceRadius,
+          maxValue: maximumRates,
+          colorBorder: theme.colorScheme.onPrimaryContainer,
+          colorText: theme.colorScheme.onPrimaryContainer,
+          colorTextShadow: theme.colorScheme.primaryContainer,
+        ));
+      }
+      return Stack(children: [
+        chart.PieChart(
+          chart.PieChartData(
+            sections: sections,
+            centerSpaceRadius: centerSpaceRadius,
+            startDegreeOffset: (360 / 24) * 5,
+          ),
+        ),
+        PolarLineChart(
+          radius: centerSpaceRadius,
+          offsets: offsets,
+          color: theme.colorScheme.tertiaryContainer,
+          startRadianOffset: math.pi / 24 * 11,
+        ),
+      ]);
+    });
   }
 }
 
@@ -203,40 +215,43 @@ class HistoricEnergyUseClockError extends StatelessWidget {
   }
 }
 
-class HistoricEnergyUseClockNotifier
-    extends StateNotifier<HistoricEnergyUseClockState> {
-  HistoricEnergyUseClockNotifier()
-      : super(const HistoricEnergyUseClockState(
-          historicEnergyUse: HourlyEnergyUse(usage: {}),
-          filteredHistoricEnergyUse: HourlyEnergyUse(usage: {}),
-          historicEnergyRates: CentPerEnergyRates(rates: {}),
-          filteredHistoricEnergyRates: CentPerEnergyRates(rates: {}),
-          weekdays: {1, 2, 3, 4, 5, 6, 7},
-        ));
+@riverpod
+class HistoricEnergyUseClockNotifier extends _$HistoricEnergyUseClockNotifier {
+  HistoricEnergyUseClockNotifier() : super();
 
-  void changeEnergyUse(HourlyEnergyUse newUse, CentPerEnergyRates newRates) {
+  @override
+  HistoricEnergyUseClockState? build() {
+    return null;
+  }
+
+  Future<void> changeEnergyUse(
+      HourlyEnergyUse newUse, CentPerEnergyRates newRates) async {
     state = HistoricEnergyUseClockState.fromUnfiltered(
       historicEnergyUse: newUse,
       historicEnergyRates: newRates,
-    ).filterByWeekday(state.weekdays);
+    ).filterByWeekday(state?.weekdays ?? {1, 2, 3, 4, 5, 6, 7});
   }
 
-  void changeFilter(Set<int> newWeekdays) {
-    state = state.filterByWeekday(
-      newWeekdays,
+  Future<void> changeFilter(Set<int> newWeekdays) async {
+    if (state != null) {
+      state = state!.filterByWeekday(
+        newWeekdays,
+      );
+    }
+  }
+
+  Future<void> fromComEdCsvFile(file) async {
+    final newUsage = HourlyEnergyUse.fromComEdCsvFile(file);
+    final dateRange = newUsage.getDateRange();
+    final newRates = await fetchHistoricHourlyRatesDayRange(
+      dateRange[0],
+      dateRange[1],
     );
+    changeEnergyUse(newUsage, newRates);
   }
 }
 
-final energyUseProvider = StateNotifierProvider<HistoricEnergyUseClockNotifier,
-    HistoricEnergyUseClockState>((ref) {
-  return HistoricEnergyUseClockNotifier();
-});
-
 class HistoricEnergyUseClockController extends ConsumerWidget {
-  final StateNotifierProvider<HistoricEnergyUseClockNotifier,
-      HistoricEnergyUseClockState> stateProvider;
-
   static const Map<String, int> dayNames = {
     'monday': DateTime.monday,
     'tuesday': DateTime.tuesday,
@@ -249,16 +264,18 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
 
   const HistoricEnergyUseClockController({
     super.key,
-    required this.stateProvider,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    HistoricEnergyUseClockState state = ref.watch(stateProvider);
+    HistoricEnergyUseClockState? state =
+        ref.watch(historicEnergyUseClockNotifierProvider);
     final TextTheme textTheme = Theme.of(context).textTheme;
 
     String averagePriceMessage = '';
-    if (state.averageRate.isFinite) {
+    if (state == null) {
+      averagePriceMessage = 'There is no data loaded.';
+    } else if (state.averageRate.isFinite) {
       averagePriceMessage =
           'The average price for electricity only is ${state.averageRate.toStringAsFixed(3)} ${state.filteredHistoricEnergyRates.units}. Other fees and charges may apply.';
     } else {
@@ -271,24 +288,18 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
         children: <Widget>[
           const SizedBox(height: 5.0),
           FilledButton(
-            child: const Text('Load your usage data'),
+            child: (state == null)
+                ? const Text('Load your usage data')
+                : const Text('Reload your usage data'),
             onPressed: () async {
               FilePickerResult? result = await FilePicker.platform
                   .pickFiles(type: FileType.custom, allowedExtensions: ['csv']);
               // The result will be null, if the user aborted the dialog
               if (result != null) {
                 File file = File(result.files.first.path!);
-                final newUsage = HourlyEnergyUse.fromComEdCsvFile(file);
-                final dateRange = newUsage.getDateRange();
-                final newRates = await fetchHistoricHourlyRatesDayRange(
-                  dateRange[0],
-                  dateRange[1],
-                );
-                // TODO: Add a loading state here while awaiting results?
-                ref.read(stateProvider.notifier).changeEnergyUse(
-                      newUsage,
-                      newRates,
-                    );
+                ref
+                    .read(historicEnergyUseClockNotifierProvider.notifier)
+                    .fromComEdCsvFile(file);
               }
             },
           ),
@@ -303,15 +314,19 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
             children: dayNames.entries.map((entry) {
               return FilterChip(
                 label: Text(entry.key),
-                selected: state.weekdays.contains(entry.value),
+                selected: state?.weekdays.contains(entry.value) ?? false,
                 onSelected: (bool selected) {
-                  Set<int> newWeekdays = Set.from(state.weekdays);
-                  if (selected) {
-                    newWeekdays.add(entry.value);
-                  } else {
-                    newWeekdays.remove(entry.value);
+                  if (state != null) {
+                    Set<int> newWeekdays = Set.from(state.weekdays);
+                    if (selected) {
+                      newWeekdays.add(entry.value);
+                    } else {
+                      newWeekdays.remove(entry.value);
+                    }
+                    ref
+                        .read(historicEnergyUseClockNotifierProvider.notifier)
+                        .changeFilter(newWeekdays);
                   }
-                  ref.read(stateProvider.notifier).changeFilter(newWeekdays);
                 },
               );
             }).toList(),
@@ -339,7 +354,7 @@ class HistoricEnergyUseClockControllerButton extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Filter Settings'),
       ),
-      body: HistoricEnergyUseClockController(stateProvider: energyUseProvider),
+      body: const HistoricEnergyUseClockController(),
     );
     return FloatingActionButton(
       tooltip: 'Load and filter data',
