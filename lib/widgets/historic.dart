@@ -114,8 +114,8 @@ class HistoricEnergyUseClock extends ConsumerWidget {
             : const HistoricEnergyUseClockError(),
         Legend(
           labels: const [
-            'Energy Use',
-            'Energy Rates',
+            'Electricity Use',
+            'Electricity Price',
           ],
           colors: [
             theme.colorScheme.tertiaryContainer,
@@ -385,7 +385,7 @@ class HistoricEnergyUseExplainer extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
-              'What is your historic energy use?',
+              'Electricity Use and Historic Prices',
               textAlign: TextAlign.left,
               textScaler: TextScaler.linear(2.0),
             ),
@@ -393,7 +393,23 @@ class HistoricEnergyUseExplainer extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
-              'This chart shows the average hourly energy use from your Green Button Download.',
+              'in kWh and cents per kWh',
+              textAlign: TextAlign.left,
+              textScaler: TextScaler.linear(1.5),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'This chart shows your average hourly electricity use for each hour in the day as a line drawn over the average hourly electricity prices for the same period. Noon appears at the top of the figure and midnight at the bottom. The area of each bar scales with the price.',
+              textAlign: TextAlign.left,
+              textScaler: TextScaler.linear(1.0),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'Reduce your electricity bill by shifting electricity use to hours when electricity prices are low.',
               textAlign: TextAlign.left,
               textScaler: TextScaler.linear(1.0),
             ),

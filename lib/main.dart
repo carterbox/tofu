@@ -87,7 +87,7 @@ class NavigationDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.price_change),
-            title: const Text('Hourly Energy Rates'),
+            title: const Text('Forecasted Rates'),
             selected: selectedDestination == 0,
             onTap: () {
               Navigator.of(context).pop();
@@ -99,7 +99,7 @@ class NavigationDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.history),
-            title: const Text('Historic Energy Usage'),
+            title: const Text('Historic Usage'),
             selected: selectedDestination == 1,
             onTap: () {
               Navigator.of(context).pop();
@@ -127,7 +127,7 @@ class NavigationDrawer extends StatelessWidget {
 class HourlyEnergyRatesPage extends StatelessWidget {
   const HourlyEnergyRatesPage({super.key});
 
-  final String title = 'Hourly Energy Rates';
+  final String title = 'Forecasted Rates';
 
   @override
   Widget build(BuildContext context) {
@@ -191,7 +191,7 @@ class HourlyEnergyRatesPage extends StatelessWidget {
 class HistoricEnergyUsePage extends StatelessWidget {
   const HistoricEnergyUsePage({super.key});
 
-  final String title = 'Historic Energy Use';
+  final String title = 'Historic Use';
 
   @override
   Widget build(BuildContext context) {

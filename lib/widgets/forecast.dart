@@ -151,7 +151,7 @@ class PriceClockExplainer extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
-              'When should you run your appliances?',
+              '24 Hour Forecast of Electricity Prices',
               textAlign: TextAlign.left,
               textScaler: TextScaler.linear(2.0),
             ),
@@ -159,7 +159,15 @@ class PriceClockExplainer extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
-              'Run your appliances when electricity rates are low.',
+              'in cents per kWh',
+              textAlign: TextAlign.left,
+              textScaler: TextScaler.linear(1.5),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              'This chart shows the current and forecasted hourly average electricity prices for the Chicagoland ComEd electricity market. The current hour is highlighted. Noon appears at the top of the figure and midnight at the bottom. The area of each bar scales with the price.',
               textAlign: TextAlign.left,
               textScaler: TextScaler.linear(1.0),
             ),
@@ -167,7 +175,7 @@ class PriceClockExplainer extends StatelessWidget {
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Text(
-              'This chart shows the current and forecasted hourly average electricity prices for as much of the next 24 hours as possible in the Chicagoland ComEd energy market.',
+              'Reduce your electricity bill by shifting electricity use to hours when electricity prices are low.',
               textAlign: TextAlign.left,
               textScaler: TextScaler.linear(1.0),
             ),
