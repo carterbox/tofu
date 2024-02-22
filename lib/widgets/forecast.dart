@@ -144,43 +144,45 @@ class PriceClockExplainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              '24 Hour Forecast of Electricity Prices',
-              textAlign: TextAlign.left,
-              textScaler: TextScaler.linear(2.0),
+      child: const SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                '24 Hour Forecast of Electricity Prices',
+                textAlign: TextAlign.left,
+                textScaler: TextScaler.linear(2.0),
+              ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              'in cents per kWh',
-              textAlign: TextAlign.left,
-              textScaler: TextScaler.linear(1.5),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                'in cents per kWh',
+                textAlign: TextAlign.left,
+                textScaler: TextScaler.linear(1.5),
+              ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              'This chart shows the current and forecasted hourly average electricity prices for the Chicagoland ComEd electricity market. The current hour is highlighted. Noon appears at the top of the figure and midnight at the bottom. The area of each bar scales with the price.',
-              textAlign: TextAlign.left,
-              textScaler: TextScaler.linear(1.0),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                'This chart shows the current and forecasted hourly average electricity prices for the Chicagoland ComEd electricity market. The current hour is highlighted. Noon appears at the top of the figure and midnight at the bottom. The area of each bar scales with the price.',
+                textAlign: TextAlign.left,
+                textScaler: TextScaler.linear(1.0),
+              ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              'Reduce your electricity bill by shifting electricity use to hours when electricity prices are low.',
-              textAlign: TextAlign.left,
-              textScaler: TextScaler.linear(1.0),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                'Reduce your electricity bill by shifting electricity use to hours when electricity prices are low.',
+                textAlign: TextAlign.left,
+                textScaler: TextScaler.linear(1.0),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
