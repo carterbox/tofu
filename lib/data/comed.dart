@@ -330,6 +330,23 @@ class CentPerEnergyRates extends HourlyEnergyRates {
     );
   }
 
+  CentPerEnergyRates filterByMonth(List<int> months) {
+    final filteredUsage = Map.of(rates);
+    filteredUsage.removeWhere((key, value) => !months.contains(key.month));
+    return CentPerEnergyRates(
+      rates: filteredUsage,
+    );
+  }
+
+  CentPerEnergyRates filterByDate(DateTime start, DateTime end) {
+    final filteredUsage = Map.of(rates);
+    filteredUsage.removeWhere(
+        (key, value) => key.compareTo(start) <= 0 || key.compareTo(end) > 0);
+    return CentPerEnergyRates(
+      rates: filteredUsage,
+    );
+  }
+
   factory CentPerEnergyRates.placeholder() {
     Map<DateTime, double> rates = {
       DateTime(2023, 1, 1, 01): 0.15,
