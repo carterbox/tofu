@@ -225,7 +225,9 @@ class HistoricEnergyUseClockNotifier extends _$HistoricEnergyUseClockNotifier {
   }
 
   Future<void> changeEnergyUse(
-      HourlyEnergyUse newUse, CentPerEnergyRates newRates) async {
+    HourlyEnergyUse newUse,
+    CentPerEnergyRates newRates,
+  ) async {
     state = HistoricEnergyUseClockState.fromUnfiltered(
       historicEnergyUse: newUse,
       historicEnergyRates: newRates,
@@ -287,56 +289,64 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: <Widget>[
           const SizedBox(height: 5.0),
-          FilledButton(
-            child: (state == null)
-                ? const Text('Load your usage data')
-                : const Text('Reload your usage data'),
-            onPressed: () async {
-              FilePickerResult? result = await FilePicker.platform
-                  .pickFiles(type: FileType.custom, allowedExtensions: ['csv']);
-              // The result will be null, if the user aborted the dialog
-              if (result != null) {
-                File file = File(result.files.first.path!);
-                ref
-                    .read(historicEnergyUseClockNotifierProvider.notifier)
-                    .fromComEdCsvFile(file);
-              }
-            },
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: OutlinedButton(
+              child: (state == null)
+                  ? const Text('Load your usage data')
+                  : const Text('Reload your usage data'),
+              onPressed: () async {
+                FilePickerResult? result = await FilePicker.platform
+                    .pickFiles(type: FileType.custom, allowedExtensions: ['csv']);
+                // The result will be null, if the user aborted the dialog
+                if (result != null) {
+                  File file = File(result.files.first.path!);
+                  ref
+                      .read(historicEnergyUseClockNotifierProvider.notifier)
+                      .fromComEdCsvFile(file);
+                }
+              },
+            ),
           ),
           const SizedBox(height: 30.0),
-          Text('Filter by weekday', style: textTheme.titleLarge),
-          const SizedBox(height: 10.0),
-          Wrap(
-            alignment: WrapAlignment.center,
-            runAlignment: WrapAlignment.center,
-            spacing: 5.0,
-            runSpacing: 5.0,
-            children: dayNames.entries.map((entry) {
-              return FilterChip(
-                label: Text(entry.key),
-                selected: state?.weekdays.contains(entry.value) ?? false,
-                onSelected: (bool selected) {
-                  if (state != null) {
-                    Set<int> newWeekdays = Set.from(state.weekdays);
-                    if (selected) {
-                      newWeekdays.add(entry.value);
-                    } else {
-                      newWeekdays.remove(entry.value);
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              runAlignment: WrapAlignment.center,
+              spacing: 5.0,
+              runSpacing: 5.0,
+              children: dayNames.entries.map((entry) {
+                return FilterChip(
+                  label: Text(entry.key),
+                  selected: state?.weekdays.contains(entry.value) ?? false,
+                  onSelected: (bool selected) {
+                    if (state != null) {
+                      Set<int> newWeekdays = Set.from(state.weekdays);
+                      if (selected) {
+                        newWeekdays.add(entry.value);
+                      } else {
+                        newWeekdays.remove(entry.value);
+                      }
+                      ref
+                          .read(historicEnergyUseClockNotifierProvider.notifier)
+                          .changeFilter(newWeekdays);
                     }
-                    ref
-                        .read(historicEnergyUseClockNotifierProvider.notifier)
-                        .changeFilter(newWeekdays);
-                  }
-                },
-              );
-            }).toList(),
+                  },
+                  showCheckmark: false,
+                );
+              }).toList(),
+            ),
           ),
-          const SizedBox(height: 10.0),
-          Text(
-            averagePriceMessage,
-            style: textTheme.bodyMedium,
+          const SizedBox(height: 30.0),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              averagePriceMessage,
+              style: textTheme.bodyMedium,
+            ),
           ),
-          const SizedBox(height: 10.0),
+          const SizedBox(height: 30.0),
         ],
       ),
     );
@@ -361,6 +371,7 @@ class HistoricEnergyUseClockControllerButton extends StatelessWidget {
       heroTag: 'controller',
       child: const Icon(Icons.filter_list),
       onPressed: () {
+        // FIXME: Use side sheet instead of new page
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => controller,
