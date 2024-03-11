@@ -211,7 +211,11 @@ class HistoricEnergyUseClockError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return const Center(
+      child: Icon(
+        Icons.error_outline,
+      ),
+    );
   }
 }
 
@@ -296,8 +300,8 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
                   ? const Text('Load your usage data')
                   : const Text('Reload your usage data'),
               onPressed: () async {
-                FilePickerResult? result = await FilePicker.platform
-                    .pickFiles(type: FileType.custom, allowedExtensions: ['csv']);
+                FilePickerResult? result = await FilePicker.platform.pickFiles(
+                    type: FileType.custom, allowedExtensions: ['csv']);
                 // The result will be null, if the user aborted the dialog
                 if (result != null) {
                   File file = File(result.files.first.path!);
