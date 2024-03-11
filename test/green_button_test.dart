@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'package:electricity_clock/comed.dart';
+import 'package:electricity_clock/data/comed.dart';
 import 'package:test/test.dart';
-import 'package:electricity_clock/green_button.dart';
+import 'package:electricity_clock/data/green_button.dart';
 
 void main() {
   test('Check CSV green button loader', () {

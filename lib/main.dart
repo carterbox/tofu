@@ -16,16 +16,17 @@
 
 import 'dart:io';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:electricity_clock/comed.dart';
-import 'package:electricity_clock/solar.dart';
-import 'package:electricity_clock/theme.dart';
-import 'package:electricity_clock/green_button.dart';
 import 'package:window_size/window_size.dart';
+
+import 'theme.dart';
+import 'widgets/forecast.dart';
+import 'widgets/historic.dart';
+import 'widgets/solar.dart';
 
 void main() {
   Logger.root.onRecord.listen((record) {
@@ -86,7 +87,7 @@ class NavigationDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.price_change),
-            title: const Text('Hourly Energy Rates'),
+            title: const Text('Forecasted Rates'),
             selected: selectedDestination == 0,
             onTap: () {
               Navigator.of(context).pop();
@@ -98,7 +99,7 @@ class NavigationDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.history),
-            title: const Text('Historic Energy Usage'),
+            title: const Text('Historic Usage'),
             selected: selectedDestination == 1,
             onTap: () {
               Navigator.of(context).pop();
@@ -126,13 +127,54 @@ class NavigationDrawer extends StatelessWidget {
 class HourlyEnergyRatesPage extends StatelessWidget {
   const HourlyEnergyRatesPage({super.key});
 
-  final String title = 'Hourly Energy Rates';
+  final String title = 'Forecasted Rates';
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
       final colorScheme = Theme.of(context).colorScheme;
       final layoutIsWide = constraints.maxWidth > 600;
+      Widget body = Stack(
+        children: [
+          Row(
+            children: [
+              if (layoutIsWide)
+                Expanded(
+                  flex: 13,
+                  child: Container(),
+                ),
+              const Expanded(
+                flex: 21,
+                child: StreamingSolarCircle(),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              if (layoutIsWide)
+                Expanded(
+                  flex: 13,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: 600,
+                      child: Card(
+                        color: colorScheme.primaryContainer,
+                        child: const PriceClockExplainer(),
+                      ),
+                    ),
+                  ),
+                ),
+              const Expanded(
+                flex: 21,
+                child: Stack(
+                  children: [StreamingPriceClock()],
+                ),
+              ),
+            ],
+          )
+        ],
+      );
       return Scaffold(
         appBar: AppBar(
           title: Text(title),
@@ -140,159 +182,87 @@ class HourlyEnergyRatesPage extends StatelessWidget {
         floatingActionButton:
             layoutIsWide ? null : const PriceClockExplainerButton(),
         drawer: const NavigationDrawer(0),
-        body: Stack(
-          children: [
-            Row(
-              children: [
-                if (layoutIsWide)
-                  Expanded(
-                    flex: 13,
-                    child: Container(),
-                  ),
-                const Expanded(
-                  flex: 21,
-                  child: StreamingSolarCircle(),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                if (layoutIsWide)
-                  Expanded(
-                    flex: 13,
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: SizedBox(
-                        width: 600,
-                        child: Card(
-                          color: colorScheme.primaryContainer,
-                          child: const PriceClockExplainer(),
-                        ),
-                      ),
-                    ),
-                  ),
-                const Expanded(
-                  flex: 21,
-                  child: Stack(
-                    children: [
-                      StreamingPriceClock(),
-                    ],
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
-      );
-    });
-  }
-}
-
-final energyUseProvider = StateNotifierProvider<HistoricEnergyUseClockNotifier,
-    HistoricEnergyUseClockState>((ref) {
-  return HistoricEnergyUseClockNotifier();
-});
-
-class HistoricEnergyUsePage extends ConsumerWidget {
-  const HistoricEnergyUsePage({super.key});
-
-  final String title = 'Historic Energy Use';
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    HistoricEnergyUseClockState state = ref.watch(energyUseProvider);
-
-    return LayoutBuilder(builder: (context, constraints) {
-      final layoutIsWide = constraints.maxWidth > 600;
-      final colorScheme = Theme.of(context).colorScheme;
-      Widget body = Row(children: [
-        if (layoutIsWide)
-          Expanded(
-            flex: 13,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(
-                width: 600,
-                child: Card(
-                  color: colorScheme.primaryContainer,
-                  child: const HistoricEnergyUseExplainer(),
-                ),
-              ),
-            ),
-          ),
-        Expanded(
-            flex: 21,
-            child: Column(
-              children: [
-                Expanded(
-                    child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    HistoricEnergyUseClock(state: state),
-                  ],
-                )),
-                HistoricEnergyUseClockController(
-                    stateProvider: energyUseProvider)
-              ],
-            )),
-      ]);
-
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(title),
-        ),
-        floatingActionButton:
-            layoutIsWide ? null : const HistoricEnergyUseExplainerButton(),
-        drawer: const NavigationDrawer(1),
         body: body,
       );
     });
   }
 }
 
-final streamOfDayInfo = StreamProvider<DayInfo>((ref) async* {
-  await for (final day in streamSunriseSunset()) {
-    yield day;
-  }
-});
+class HistoricEnergyUsePage extends StatelessWidget {
+  const HistoricEnergyUsePage({super.key});
 
-class StreamingSolarCircle extends ConsumerWidget {
-  const StreamingSolarCircle({super.key});
+  final String title = 'Historic Use';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dayInfo = ref.watch(streamOfDayInfo).when(
-          error: (error, stackTrace) => const DayInfo(length: 12, sunrise: 6),
-          loading: () => const DayInfo(length: 12, sunrise: 6),
-          data: (data) => data,
-        );
-    return SolarCircle(
-      radius: 2.0,
-      today: dayInfo,
-      dayColor: Theme.of(context).colorScheme.surface,
-      nightColor: Theme.of(context).colorScheme.surfaceVariant,
-    );
-  }
-}
+  Widget build(BuildContext context) {
 
-final streamOfEnergyRates = StreamProvider<EnergyRatesUpdate>((ref) async* {
-  await for (final rate in streamRatesNextDay()) {
-    yield rate;
-  }
-});
-
-class StreamingPriceClock extends ConsumerWidget {
-  const StreamingPriceClock({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ref.watch(streamOfEnergyRates).when(
-          error: (error, stackTrace) => const PriceClockLoading(),
-          loading: () => const PriceClockLoading(),
-          data: (data) => PriceClock(
-            energyRates: data.forecast,
-            currentHourRate: data.currentHour,
+    return LayoutBuilder(builder: (context, constraints) {
+      final layoutIsWide = constraints.maxWidth > 600;
+      final colorScheme = Theme.of(context).colorScheme;
+      Widget body = Stack(
+        children: [
+          Row(
+            children: [
+              if (layoutIsWide)
+                Expanded(
+                  flex: 13,
+                  child: Container(),
+                ),
+              Expanded(
+                flex: 21,
+                child: SolarCircle(
+                  radius: 2.0,
+                  dayColor: colorScheme.surface,
+                  nightColor: colorScheme.surfaceVariant,
+                ),
+              ),
+            ],
           ),
-        );
+          Row(
+            children: [
+              if (layoutIsWide)
+                Expanded(
+                  flex: 13,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: 600,
+                      child: Card(
+                        color: colorScheme.primaryContainer,
+                        child: const HistoricEnergyUseExplainer(),
+                      ),
+                    ),
+                  ),
+                ),
+              const Expanded(
+                flex: 21,
+                child: Stack(
+                  children: [HistoricEnergyUseClock()],
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(title),
+        ),
+        floatingActionButton: layoutIsWide
+            ? const HistoricEnergyUseClockControllerButton()
+            : const Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  HistoricEnergyUseExplainerButton(),
+                  SizedBox(
+                    height: 8,
+                  ),
+                  HistoricEnergyUseClockControllerButton(),
+                ],
+              ),
+        drawer: const NavigationDrawer(1),
+        body: body,
+      );
+    });
   }
 }

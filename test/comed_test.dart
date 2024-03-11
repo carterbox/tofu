@@ -1,4 +1,4 @@
-import 'package:electricity_clock/comed.dart';
+import 'package:electricity_clock/data/comed.dart';
 import 'package:test/test.dart';
 
 void main() {
