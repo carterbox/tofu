@@ -169,7 +169,7 @@ class HistoricEnergyUseClockLoaded extends StatelessWidget {
           value: rates[hour],
           units: state.historicEnergyRates.units,
           color: theme.colorScheme.primaryContainer,
-          isImportant: importantRates.contains(rates[hour]),
+          isImportant: importantRates.contains(rates[hour]) || (hour % 4 == 0),
           barMaxRadialSize: barMaxRadialSize,
           centerSpaceRadius: centerSpaceRadius,
           maxValue: maximumRates,

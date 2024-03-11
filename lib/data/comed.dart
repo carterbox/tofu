@@ -209,14 +209,24 @@ abstract class HourlyEnergyRates {
     var finiteRates = Map<DateTime, double>.of(rates);
     finiteRates.removeWhere((key, value) => !(value.isFinite));
 
-    var ratesSorted = finiteRates.values.toList();
-    ratesSorted.sort();
+    var values = finiteRates.values.toList();
+    List<double> highlights = List.empty(growable: true);
+    int half = values.length ~/ 1;
 
-    return [
-      ratesSorted[0],
-      ratesSorted[finiteRates.length ~/ 2],
-      ratesSorted[finiteRates.length - 1],
-    ];
+    for (var i = 0; i < values.length; i += half) {
+      var ratesSorted = values.sublist(i, math.min(i + half, values.length));
+      ratesSorted.removeWhere((element) => !(element.isFinite));
+
+      if (ratesSorted.isEmpty) {
+        continue;
+      }
+      ratesSorted.sort();
+      highlights.add(ratesSorted[0]);
+      highlights.add(ratesSorted[ratesSorted.length ~/ 2]);
+      highlights.add(ratesSorted[ratesSorted.length - 1]);
+    }
+
+    return highlights;
   }
 }
 

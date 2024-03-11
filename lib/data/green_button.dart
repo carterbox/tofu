@@ -25,7 +25,9 @@ library;
 
 import 'dart:io';
 import 'dart:convert';
+import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:logging/logging.dart' as logging;
@@ -208,17 +210,23 @@ class HourlyEnergyUse {
 
 /// Provides min, median, and max rates in that order
 List<double> getHighlights(List<double> values) {
-  var ratesSorted = values.toList();
-  ratesSorted.removeWhere((element) => !(element.isFinite));
-  if (ratesSorted.isEmpty) {
-    return [];
+  List<double> highlights = List.empty(growable: true);
+  int half = values.length ~/ 1;
+
+  for (var i = 0; i < values.length; i += half) {
+    var ratesSorted = values.sublist(i, math.min(i + half, values.length));
+    ratesSorted.removeWhere((element) => !(element.isFinite));
+
+    if (ratesSorted.isEmpty) {
+      continue;
+    }
+    ratesSorted.sort();
+    highlights.add(ratesSorted[0]);
+    highlights.add(ratesSorted[ratesSorted.length ~/ 2]);
+    highlights.add(ratesSorted[ratesSorted.length - 1]);
   }
-  ratesSorted.sort();
-  return [
-    ratesSorted[0],
-    ratesSorted[ratesSorted.length ~/ 2],
-    ratesSorted[ratesSorted.length - 1],
-  ];
+
+  return highlights;
 }
 
 double computeAverageRate(

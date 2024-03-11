@@ -77,7 +77,7 @@ class PriceClock extends StatelessWidget {
           color: isCurrentHour
               ? theme.colorScheme.tertiaryContainer
               : theme.colorScheme.primaryContainer,
-          isImportant: isCurrentHour || importantRates.contains(price),
+          isImportant: isCurrentHour || importantRates.contains(price) || (hour % 3 == 0),
           maxValue: barHeightMaximum,
           centerSpaceRadius: centerSpaceRadius,
           barMaxRadialSize: barMaxRadialSize,
