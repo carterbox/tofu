@@ -63,7 +63,7 @@ dependencies:
   sunrise_sunset_calc: ^3.0.0
   dynamic_color: ^1.6.3
   flutter_riverpod: ^2.4.10
-  file_picker: ^6.1.1
+  file_picker: ^8.0.0+1
   collection: ^1.17.1
   riverpod_annotation: ^2.3.4
 
