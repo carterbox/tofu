@@ -213,7 +213,7 @@ class HistoricEnergyUsePage extends StatelessWidget {
                 child: SolarCircle(
                   radius: 2.0,
                   dayColor: colorScheme.surface,
-                  nightColor: colorScheme.surfaceVariant,
+                  nightColor: colorScheme.surfaceContainerHighest,
                 ),
               ),
             ],
