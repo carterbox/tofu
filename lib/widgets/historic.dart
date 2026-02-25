@@ -106,7 +106,7 @@ class HistoricEnergyUseClock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     HistoricEnergyUseClockState? state =
-        ref.watch(historicEnergyUseClockNotifierProvider);
+        ref.watch(historicEnergyUseClockProvider);
     return Stack(
       children: [
         (state != null)
@@ -246,7 +246,7 @@ class HistoricEnergyUseClockNotifier extends _$HistoricEnergyUseClockNotifier {
     }
   }
 
-  Future<void> fromComEdCsvFile(file) async {
+  Future<void> fromComEdCsvFile(File file) async {
     final newUsage = HourlyEnergyUse.fromComEdCsvFile(file);
     final dateRange = newUsage.getDateRange();
     final newRates = await fetchHistoricHourlyRatesDayRange(
@@ -275,7 +275,7 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     HistoricEnergyUseClockState? state =
-        ref.watch(historicEnergyUseClockNotifierProvider);
+        ref.watch(historicEnergyUseClockProvider);
     final TextTheme textTheme = Theme.of(context).textTheme;
 
     String averagePriceMessage = '';
@@ -306,7 +306,7 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
                 if (result != null) {
                   File file = File(result.files.first.path!);
                   ref
-                      .read(historicEnergyUseClockNotifierProvider.notifier)
+                      .read(historicEnergyUseClockProvider.notifier)
                       .fromComEdCsvFile(file);
                 }
               },
@@ -333,7 +333,7 @@ class HistoricEnergyUseClockController extends ConsumerWidget {
                         newWeekdays.remove(entry.value);
                       }
                       ref
-                          .read(historicEnergyUseClockNotifierProvider.notifier)
+                          .read(historicEnergyUseClockProvider.notifier)
                           .changeFilter(newWeekdays);
                     }
                   },
